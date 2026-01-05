@@ -1,0 +1,69 @@
+#pragma once
+#include <string>
+
+#include "ObjectStore.h"
+#include "LayoutTraits.h"
+#include "Property.h"
+
+class UMapPropertyEntry final : public PropertyEntry, LayoutTraits<UMapProperty, UProperty> {
+public:
+    using PropertyEntry::PropertyEntry;
+
+    [[nodiscard]] auto getCanonicalType() const -> std::string override {
+        const auto* mapProp = static_cast<UMapProperty*>(getObject());
+
+        if (!mapProp || !mapProp->Key || !mapProp->Value) {
+            return "TMap<void*, void*>";
+        }
+
+        const auto* keyEntry = ObjectStore::instance().add(mapProp->Key, getFullName());
+        const auto* valueEntry = ObjectStore::instance().add(mapProp->Value, getFullName());
+
+        return "TMap<" + keyEntry->getCanonicalType() + ", " + valueEntry->getCanonicalType() + ">";
+    }
+
+    [[nodiscard]] auto getCacheType() const -> std::string override { return "UMapPropertyEntry"; }
+    [[nodiscard]] auto getDefaultClassName() const -> std::string override { return "UMapProperty"; }
+    [[nodiscard]] auto isTriviallyCopyable() const -> bool override { return false; }
+    [[nodiscard]] auto canConst() const -> bool override { return false; }
+    // fixme
+
+    [[nodiscard]] auto getStructDependencyTypes() const -> const std::unordered_set<std::string>& override {
+        const auto* rawProp = getObject();
+        if (!rawProp) {
+            return EMPTY_STR_SET;
+        }
+
+        if (rawProp->Class->GetName() != "MapProperty") {
+            Logger::log("  WARNING: This property is not a real UMapProperty! it's a {}", rawProp->Class->GetName());
+            return EMPTY_STR_SET;
+        }
+
+        std::unordered_set<std::string> deps;
+
+        const auto* mapProp = static_cast<UMapProperty*>(getObject());
+        if (!mapProp || !mapProp->Key || !mapProp->Value) {
+            return EMPTY_STR_SET;
+        }
+
+        const auto* keyEntry = ObjectStore::instance().add(mapProp->Key, getFullName())->as<PropertyEntry>();
+        const auto* valEntry = ObjectStore::instance().add(mapProp->Value, getFullName())->as<PropertyEntry>();
+
+        auto keyDeps = keyEntry->getStructDependencyTypes();
+        auto valDeps = valEntry->getStructDependencyTypes();
+
+        Logger::log("MapProperty: {}", getFullName());
+        Logger::log("  Key: {} → {}", (void*)mapProp->Key, keyEntry ? keyEntry->getFullName() : "null");
+        Logger::log("  Val: {} → {}", (void*)mapProp->Value, valEntry ? valEntry->getFullName() : "null");
+        Logger::log("  Key canonical: {}", keyEntry ? keyEntry->getCanonicalType() : "n/a");
+        Logger::log("  Val canonical: {}", valEntry ? valEntry->getCanonicalType() : "n/a");
+
+        dependencyTypes_.insert(keyEntry->getFullName());  // this ensures Foo gets walked
+        dependencyTypes_.insert(valEntry->getFullName());
+
+        dependencyTypes_.insert(keyDeps.begin(), keyDeps.end());
+        dependencyTypes_.insert(valDeps.begin(), valDeps.end());
+
+        return dependencyTypes_;
+    }
+};

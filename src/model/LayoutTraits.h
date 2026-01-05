@@ -1,0 +1,16 @@
+#pragma once
+
+/// Layout traits mixin using CRTP
+/// Provides compile-time layout information for Unreal class hierarchies
+/// @tparam ThisType The derived class type
+/// @tparam BaseType The immediate base class type
+
+#include <cstdio>
+
+template <typename ThisType, typename BaseType>
+struct LayoutTraits {
+    static constexpr ptrdiff_t getClassSize() { return sizeof(ThisType); }
+    static constexpr ptrdiff_t offsetFrom() {
+        return sizeof(ThisType) - sizeof(BaseType);
+    }
+};

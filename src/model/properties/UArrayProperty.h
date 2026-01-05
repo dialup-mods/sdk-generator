@@ -1,0 +1,81 @@
+#pragma once
+#include <string>
+
+#include "LayoutTraits.h"
+#include "ObjectStore.h"
+#include "Property.h"
+#include "UScriptStruct.h"
+#include "UStruct.h"
+#include "UStructProperty.h"
+
+class UArrayPropertyEntry final : public PropertyEntry, LayoutTraits<UArrayProperty, UProperty> {
+public:
+    using PropertyEntry::PropertyEntry;
+    [[nodiscard]] auto getCanonicalType() const -> std::string override {
+        const auto* arrayProp = static_cast<UArrayProperty*>(getObject());
+        if (!arrayProp || !arrayProp->Inner) {
+            return "TArray<UNKNOWN>";
+        }
+
+        const auto* innerEntry = ObjectStore::instance().add(arrayProp->Inner, getFullName());
+        return "TArray<" + innerEntry->getCanonicalType() + ">";
+    }
+
+    [[nodiscard]] auto getStructDependencyTypes() const -> const std::unordered_set<std::string>& override {
+        //Logger::instance().log("Getting struct deps for array property: {}", getName());
+        const auto* arrayProp = static_cast<UArrayProperty*>(getObject());
+        //if (!arrayProp || !arrayProp->Inner) { return {}; }
+
+        if (!arrayProp) {
+            Logger::instance().log("  arrayProp is null");
+            return EMPTY_STR_SET;
+        }
+        if (!arrayProp->Inner) {
+            Logger::instance().log("  arrayProp->Inner is null");
+            return EMPTY_STR_SET;
+        }
+
+        auto* innerEntry = ObjectStore::instance().add(arrayProp->Inner, getFullName());
+        //Logger::instance().log("  Inner entry type: {}, name: {}", static_cast<int>(innerEntry->getType()), innerEntry->getName());
+
+        // If it's a struct property, get the actual struct it references
+        if (const auto* structPropEntry = innerEntry->as<UStructPropertyEntry>()) {
+            //Logger::log("struct property entry inner");
+            // Get the actual struct, but don't cast it to UStructPropertyEntry
+            if (const auto* actualStruct = structPropEntry->getStructEntryAsObjectEntry()) {
+                //Logger::log("adding dep: {}", actualStruct->getFullName());
+                dependencyTypes_.insert(actualStruct->getFullName());
+                return dependencyTypes_;
+            }
+        }
+
+        // Direct struct reference (probably rare for arrays)
+        else if (const auto* structEntry = innerEntry->as<UScriptStructEntry>()) {
+            //Logger::log("scriptstruct entry");
+            dependencyTypes_.insert(structEntry->getFullName());
+            return dependencyTypes_;
+        } else if (const auto* scriptStructEntry = innerEntry->as<UStructEntry>()) {
+            //Logger::log("struct entry");
+            dependencyTypes_.insert(scriptStructEntry->getFullName());
+            return dependencyTypes_;
+        }
+
+        return EMPTY_STR_SET;
+    }
+
+    [[nodiscard]] auto getCacheType() const -> std::string override { return "UArrayPropertyEntry"; }
+    [[nodiscard]] auto getDefaultClassName() const -> std::string override { return "UArrayProperty"; }
+
+    [[nodiscard]] auto isTriviallyCopyable() const -> bool override {
+        const auto* arrayProp = static_cast<UArrayProperty*>(getObject());
+        if (!arrayProp || !arrayProp->Inner) return false;
+
+        if (const auto* innerEntry = ObjectStore::instance().add(arrayProp->Inner, getFullName())) {
+            return innerEntry->isTriviallyCopyable();
+        }
+
+        return false;
+    }
+    [[nodiscard]] auto canConst() const -> bool override { return false; }
+    [[nodiscard]] auto getSize() const -> ptrdiff_t override { return sizeof(TArray<uintptr_t>); }
+};

@@ -1,0 +1,52 @@
+BasedOnStyle: Mozilla
+Language: Cpp
+Standard: Latest
+
+ColumnLimit: 135
+
+AlwaysBreakTemplateDeclarations: true
+BreakConstructorInitializers: BeforeComma
+
+BraceWrapping:
+  AfterClass: false
+  AfterControlStatement: false
+  AfterEnum: false
+  AfterFunction: false
+  AfterNamespace: false
+  AfterStruct: false
+  AfterUnion: false
+  BeforeCatch: false
+  BeforeElse: false
+BreakBeforeBraces: Attach  # Ensures braces stay on the same line
+
+AlignEscapedNewlines: Left
+AlignAfterOpenBracket: DontAlign  # Prevents weird hanging indents
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+AlignOperands: false  # Stops LLVM's weird alignment rules
+AlignTrailingComments: true
+
+AllowAllArgumentsOnNextLine: true
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortBlocksOnASingleLine: Always  # `{ foo(); bar(); }` stays compact if it's short
+AllowShortCaseLabelsOnASingleLine: true
+#PenaltyReturnTypeOnItsOwnLine: 200
+
+IndentWidth: 4
+UseTab: Never
+ContinuationIndentWidth: 4  # Ensures function arguments don't misalign
+BinPackArguments: false  # Spreads arguments over multiple lines if needed
+BinPackParameters: false  # Same for function parameters
+
+PenaltyBreakBeforeFirstCallParameter: 50  # Makes `function(` more likely than `function(arg1`
+PenaltyBreakString: 1000  # Avoid breaking long strings if possible
+
+SpacesBeforeTrailingComments: 1
+SpacesInParentheses: false
+SpacesInContainerLiterals: false
+SpaceBeforeParens: ControlStatements  # `if (x)` but `void foo()`
+
+PointerAlignment: Left
+
+IndentPPDirectives: AfterHash
+...

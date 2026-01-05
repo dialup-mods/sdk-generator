@@ -1,0 +1,17 @@
+#pragma once
+
+#include "ObjectStore.h"
+#include "UStruct.h"
+
+namespace resolver {
+
+//inline auto getStructByName(const std::string& name) -> UStructEntry* {
+//    for (auto& entry : getAllStructs()) {
+//        if (entry->getFullName() == name) {
+//            return static_cast<UStructEntry*>(entry.get());
+//        }
+//    }
+//    return nullptr;
+//}
+
+}

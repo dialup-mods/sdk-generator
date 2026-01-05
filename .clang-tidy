@@ -1,0 +1,14 @@
+Checks: >
+  checks-*,
+  cppcoreguidelines-*,
+  modernize-*,
+  bugprone-*,
+  readability-*',
+  concurrency-*,
+  -cppcoreguidelines-pro-type-static-cast-downcast
+  -cppcoreguidelines-pro-type-reinterpret-cast
+  -cppcoreguidelines-pro-type-member-init
+  -avoid-magic-numbers
+
+SystemHeaders: false
+ExcludeHeaderFilterRegex: '^.*external.*$'

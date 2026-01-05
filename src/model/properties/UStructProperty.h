@@ -1,0 +1,62 @@
+#pragma once
+#include <string>
+
+#include "LayoutTraits.h"
+#include "Property.h"
+#include "ObjectStore.h"
+#include "UStructProperty.h"
+
+class UStructPropertyEntry final
+  : public PropertyEntry, LayoutTraits<UStructProperty, UProperty>
+{
+  public:
+    using PropertyEntry::PropertyEntry;
+    auto asStructProperty() const -> UStructProperty* {
+        if (auto* structProp = static_cast<UStructProperty*>(getObject())) {
+            return structProp;
+        }
+        return nullptr;
+    }
+
+    [[nodiscard]] auto getEmitType(const std::string& currentPackage) const -> std::string& override {
+        const auto* structProperty = static_cast<UStructProperty*>(getObject());
+        emitTypeStr_ = structProperty->Struct->GetNameCPP();
+
+        //Logger::instance().log("current package: {}, getPackageName(): {}", currentPackage, getPackageName());
+        if (currentPackage != getPackageName()) {
+            // fixme, don't emit "class" or "struct" for known types
+            if (structProperty->Struct->IsA<UClass>()) {
+                emitTypeStr_.insert(0, "class ");
+            } else if (structProperty->Struct->IsA<UScriptStruct>()) {
+                emitTypeStr_.insert(0, "struct ");
+            }
+        }
+        return emitTypeStr_;
+    }
+
+    [[nodiscard]] auto getCanonicalType() const -> std::string override {
+        const auto* structProp = static_cast<UStructProperty*>(getObject());
+        return structProp->Struct->GetNameCPP();
+    }
+    [[nodiscard]] auto getCacheType() const -> std::string override { return "UStructPropertyEntry"; }
+    [[nodiscard]] auto getDefaultClassName() const -> std::string override { return "UStructProperty"; }
+    [[nodiscard]] auto isTriviallyCopyable() const -> bool override { return isArray(); }
+    [[nodiscard]] auto canConst() const -> bool override { return false; }
+
+    auto getStructEntryAsObjectEntry() const -> ObjectEntry* {
+        if (!asStructProperty() || !asStructProperty()->Struct) {
+            return nullptr;
+        }
+        return ObjectStore::instance().add(asStructProperty()->Struct, "fixme");
+    }
+
+    // fixme
+    [[nodiscard]] auto getStructDependencyTypes() const -> const std::unordered_set<std::string>& override {
+        if (const auto* structEntry = getStructEntryAsObjectEntry()) {
+            dependencyTypes_.insert(structEntry->getFullName());
+            return dependencyTypes_;
+        }
+        Logger::instance().log("[WARNING] some edge case probably");
+        return EMPTY_STR_SET;
+    }
+};

@@ -1,0 +1,63 @@
+game:
+  platform: "Windows"
+
+output:
+  headerExtension: ".h" # WARNING: .hpp is cursed
+  combinedIncludeForwardDeclarations: |
+    class UStruct;
+    class FNameEntry;
+    class UClass;
+    class UEnum;
+    class UFunction;
+    class UObject;
+    template<typename T> class TArray;
+
+patterns:
+  processEvent:
+    # TODO: test 'pattern' for ProcessEvent
+    method: vtable # or `pattern`
+    index: 69 # set to false/-1 to use pattern
+    pattern: "69 00 69 42 01"
+    mask: "x?xxx"
+    # TODO: useFNameEntriesForOffsets: true
+
+  uObjects:
+    # TODO: test 'pattern' and 'offset' for uObjects
+    method: offsetFromFNameEntries # or `pattern` or `offset`
+    offset: 0x69
+    mask: "xx?xxxx"
+    pattern: "69 69 00 69 69 42 01"
+
+  fNameEntries:
+    # TODO: test 'offset' for fNameEntries
+    method: pattern # or `offset`
+    offset: 0x0
+    mask: "xxx?xx"
+    pattern: "69 69 69 00 69 69"
+
+generation:
+  prefixEnumsWithClass: true # emit `enum class Fun` vs `enum Fun`
+  alignment:
+    game: 0x8 # alignment used during property size/offset calculations (reflection-level)
+    final: 0x8 # alignment used for emitted SDK structs (code-level)
+
+rules:
+  - str: "PrimeUpdate"
+    method: contains
+    action: blacklist
+  - str: "UGroup_ORS"
+    method: exact
+    action: blacklist
+
+# TODO: replace not implemented
+#  - str: "SearchStatusOwner"
+#    replace: "ESearchStatusOwner"
+#    method: exact
+#    action: replace
+
+#  TODO: not implemented
+#  characterType: UTF16
+#  FStringCharacterType: UTF16
+#  removeNativeIndex: false
+#  removeNativeFlags: false
+
