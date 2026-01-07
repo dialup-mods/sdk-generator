@@ -84,32 +84,49 @@ Most code can be updated with simple find/replace.
 
 ## Quick Start
 
-### Prerequisites
+### 1. Prerequisites
 
-First, clone the main DialUp repo and install dependencies:
+#### Install Dependencies
+
+Run the following in Powershell as administrator to install: Git, CMake, Ninja, Clang, MSYS2
+
+```powershell
+iwr -useb https://raw.githubusercontent.com/dialup-mods/dialup/main/tools/install_build_deps.ps1 | iex
+```
+
+#### Clone and Install Build Tools
 ```bash
-git clone git@github.com:dialup-mods/dialup.git
+git clone --recursive git@github.com:dialup-mods/dialup.git
 cd dialup
-powershell -ExecutionPolicy Bypass -File install_build_deps.ps1
 make install-tools
 ```
 
-### Create a Game Profile
-```bash
-cd sdk-generator
+#### Install the injector:
+```sh
+cd injector
+make configure
+make build
+make install
+```
+
+NOTE: Using other generators is possible, but unsupported. The generated output should go to `../sdk-plugin/generated` for building the SDK plugin; this code path is untested outside of running the official injector within the current build system.
+
+### 2. Create a Game Profile
+```sh
+cd ../sdk-generator
 cp config/default.yaml config/mygame.yaml
 cp -r config/default config/mygame
 ```
 
-### Configure Your Game
+### 3. Configure Your Game
 
 1. **Edit `/config/mygame.yaml`** - Update patterns, offsets, and blacklist for your game. Edits made here do not require a recompile before re-running
 2. **Edit `/config/mygame/Schema.h` and `/config/mygame/Schema.cpp`** - Define core game types
 
 See the [Schema documentation](src/schema/README.md) for details on customizing SDK generation
 
-### Generate Your SDK
-```bash
+### 4. Generate Your SDK
+```sh
 make configure game=mygame
 make build
 make inject
@@ -117,9 +134,13 @@ make inject
 
 The generated SDK will be output to `../sdk-plugin/generated/`.
 
-## Next Steps
+### Next Steps
 
 Once generated, [build the DialUp SDK plugin](../sdk-plugin) to compile your SDK into a reusable library that can be safely shared across multiple plugins - no duplicate caches, no ODR violations, no random crashes.
+
+## Troubleshooting
+
+`log.txt` is generated in the current directory.
 
 ## Roadmap
 
