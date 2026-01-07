@@ -1,4 +1,5 @@
-# DialUp SDK Generator
+<h1 align="center">🌐 Dial-Up Unreal Engine SDK Generator 🌐</h1>
+<p align="center">*Best viewed in 800x600*</p>
 
 **Next generation Unreal Engine SDK generator built from scratch** for cross-DLL safety and clean code generation.
 
