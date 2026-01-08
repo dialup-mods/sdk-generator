@@ -50,6 +50,8 @@ set(INCLUDES
     ${CMAKE_SOURCE_DIR}/src/model/helpers
     ${CMAKE_SOURCE_DIR}/src/model/properties
     ${CMAKE_SOURCE_DIR}/src/schema
+    ${DIALUP_INSTALL_DIR}/include/v1
+    ${DIALUP_INSTALL_DIR}/include/external
 
     ${GAME_CONFIG_DIR}
     ${ENGINE_DIR}
