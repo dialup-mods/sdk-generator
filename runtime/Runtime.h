@@ -5,9 +5,9 @@
 #include <vector>
 
 #if defined(SDK_BUILD)
-    #define SDK_API __declspec(dllexport)
+#define SDK_API __declspec(dllexport)
 #else
-    #define SDK_API __declspec(dllimport)
+#define SDK_API __declspec(dllimport)
 #endif
 
 class UClass;

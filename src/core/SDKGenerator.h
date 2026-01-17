@@ -12,51 +12,51 @@
 #error "GAME_NAME must be defined at compile time"
 #endif
 
-#include <Windows.h>
+#include <filesystem>
 #include <functional>
 #include <random>
 #include <string>
 #include <thread>
-#include <unordered_set>
+#include <unordered_map>
 
 #include "BenchmarkTimes.h"
 #include "ConfigManager.h"
 #include "Cowsay.h"
 #include "Logger.h"
-#include "WaveWorker.h"
-#include "ObjectStore.h"
 #include "ObjectFilter.h"
-
+#include "ObjectStore.h"
 #include "Runtime.h"
 #include "RuntimeGen.h"
+#include "SchemaLoader.h"
 #include "TypeRules.h"
+#include "WaveWorker.h"
 
 #include "UClass.h"
 #include "UConst.h"
 #include "UEnum.h"
 #include "UScriptStruct.h"
-#include "SchemaLoader.h"
 
 using GroupedBase = std::unordered_map<std::string, std::vector<ObjectEntry*>>;
 namespace fs = std::filesystem;
 
 class SDKGenerator {
-  public:
+public:
     explicit SDKGenerator() {};
+    ~SDKGenerator() = default;
 
     auto ensureDirectories() -> bool {
         const std::vector<std::pair<std::string, fs::path>> dirs = {
-            //{ "combined include output", getConfig()->getCombinedIncludeDirAbs() },
-            { "sdk output",              getConfig()->getSDKOutputDir() },
-            { "headers",                 getConfig()->getHeaderDirAbs() },
-            { "implementations",         getConfig()->getImplementationDirAbs() },
-            { "meta",                    getConfig()->getMetaDirAbs() },
+            //{ "combined include output", ConfigManager::instance().getCombinedIncludeDirAbs() },
+            { "sdk output",              ConfigManager::instance().getSDKOutputDir() },
+            { "headers",                 ConfigManager::instance().getHeaderDirAbs() },
+            { "implementations",         ConfigManager::instance().getImplementationDirAbs() },
+            { "meta",                    ConfigManager::instance().getMetaDirAbs() },
         };
 
         for (const auto& [name, path] : dirs) {
-            getLogger()->log("  Output directories:");
-            getLogger()->log("    {:<24}{}", name, path.string());
-            getLogger()->log("");
+            Logger::instance().log("  Output directories:");
+            Logger::instance().log("    {:<24}{}", name, path.string());
+            Logger::instance().log("");
         }
 
         for (const auto& [name, path] : dirs) {
@@ -64,7 +64,7 @@ class SDKGenerator {
             fs::create_directories(path, ec);  // safe: creates parents too
 
             if (ec) {
-                getLogger()->log("[ERROR] Failed to create {} directory '{}': {}", name, path.string(), ec.message());
+                Logger::instance().log("[ERROR] Failed to create {} directory '{}': {}", name, path.string(), ec.message());
                 return false;
             }
         }
@@ -72,34 +72,28 @@ class SDKGenerator {
     }
 
     void run() {
-	Logger::create();
         WaveWorker wave(std::chrono::milliseconds(50));
         wave.start();
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
         wave.stop();
-        getLogger()->log("\n\n{}", cowsay::say("Dial-Up Unreal Engine SDK Generator\n\n                     by FreeAOL"));
-        getLogger()->log("\nUsing settings:\n");
-        getLogger()->log("    {:<24}{}", "Game config dir:", GAME_CONFIG_DIR);
-        getLogger()->log("    {:<24}{}\n", "Using configuration:", GAME_NAME);
+        Logger::instance().log("\n\n{}", cowsay::say("Dial-Up Unreal Engine SDK Generator\n\n                     by FreeAOL"));
+        Logger::instance().log("\nUsing settings:\n");
+        Logger::instance().log("    {:<24}{}", "Game config dir:", GAME_CONFIG_DIR);
+        Logger::instance().log("    {:<24}{}\n", "Using configuration:", GAME_NAME);
         std::this_thread::sleep_for(std::chrono::milliseconds(3000));
-        getLogger()->log("");
+        Logger::instance().log("");
 
-        getLogger()->log("Loading config..");
-        ConfigManager::create();
+        Logger::instance().log("Loading config..");
         if (!ConfigManager::instance().load()) { return; }
 
         if (!ensureDirectories()) { return; }
 
-        getLogger()->log("Opening log file handle...");
+        Logger::instance().log("Opening log file handle...");
 
         // open the log file for writing. before this point, logger just prints to console
-        getLogger()->open();
+        Logger::instance().open();
 
-        getLogger()->log("Creating runtime...");
-        Runtime::create();
-
-        getLogger()->log("Creating object store...");
-        ObjectStore::create();
+        Logger::instance().log("Creating object store...");
         {
             TypeRules::instance().initialize();
             if (generateSDK()) {
@@ -107,16 +101,8 @@ class SDKGenerator {
             }
 
             std::this_thread::sleep_for(std::chrono::milliseconds(900));
-            getLogger()->log("\nGoodbye.\n");
+            Logger::instance().log("\nGoodbye.\n");
         }
-    }
-
-    void yeet() const {
-        ObjectStore::yeet();
-        ConfigManager::yeet();
-        SchemaLoader::yeet();
-        Runtime::yeet();
-        Logger::yeet();
     }
 
     auto isHeaderFile(const std::string& filename) -> bool {
@@ -168,36 +154,6 @@ class SDKGenerator {
         }
     }
 
-    template <typename T>
-        auto selectBestGroupedEntries(
-            const std::unordered_map<std::string, std::vector<ObjectEntry*>>& groupedBase
-        ) -> std::unordered_map<std::string, std::vector<T*>> {
-        std::unordered_map<std::string, std::vector<T*>> filteredGrouped;
-
-        for (const auto& [group, entries] : groupedBase) {
-            std::unordered_map<std::string, T*> bestByParamKey;
-
-            for (auto* base : entries) {
-                auto* entry = dynamic_cast<T*>(base);
-                if (!entry || entry->isBlacklisted()) continue;
-
-                const auto key = entry->getParamKey();
-                auto& current = bestByParamKey[key];
-
-                if (!current || entry->argumentCount() > current->argumentCount()) {
-                    current = entry;
-                }
-            }
-
-            for (auto& [_, best] : bestByParamKey) {
-                filteredGrouped[group].push_back(best);
-            }
-        }
-
-        return filteredGrouped;
-    }
-
-
     void emitForwardDeclarations(FILE* file, std::vector<UScriptStructEntry*> entries) {
         // todo:
         // maybe instead of pushing around two lists
@@ -223,25 +179,25 @@ class SDKGenerator {
             std::string filename = package + "_" + suffix;
             if (isHeaderFile(suffix)) headers.emplace_back(filename);
 
-            //getLogger()->logNoNewline("\n Emitting {}", prettifyLabel(filename));
+            //Logger::instance().logNoNewline("\n Emitting {}", prettifyLabel(filename));
             //wave.startSimple();
             wave.start();
 
             FILE* file = nullptr;
             if (isHeaderFile(suffix)) {
-                 file = fopen((getConfig()->getHeaderDirAbs() / filename).string().c_str(), "w");
+                 file = fopen((ConfigManager::instance().getHeaderDirAbs() / filename).string().c_str(), "w");
             } else {
-                file = fopen((getConfig()->getImplementationDirAbs() / filename).string().c_str(), "w");
+                file = fopen((ConfigManager::instance().getImplementationDirAbs() / filename).string().c_str(), "w");
             }
             if (!file) { wave.stop(); continue; }
 
             if (isHeaderFile(suffix)) {
                 fmt::print(file, "#pragma once\n");
-                fmt::print(file, "#include \"{}\"\n", getConfig()->getCombinedIncludeFilename().string());
+                fmt::print(file, "#include \"{}\"\n", ConfigManager::instance().getCombinedIncludeFilename().string());
                 if (package == "Core") {
                     fmt::print(file, "#include \"Schema.h\"\n");
                 }
-                fmt::print(file, "\n#pragma pack(push, {})\n\n", static_cast<int>(getConfig()->getFinalAlignment()));
+                fmt::print(file, "\n#pragma pack(push, {})\n\n", static_cast<int>(ConfigManager::instance().getFinalAlignment()));
                 if (filename.find("parameters") != std::string::npos) {
                     fmt::print(file, "namespace {} {{\n\n", package);
                 }
@@ -259,7 +215,7 @@ class SDKGenerator {
                 }
 
             } else {
-                fmt::print(file, "#include \"{}\"\n\n", getConfig()->getCombinedIncludeFilename().string());
+                fmt::print(file, "#include \"{}\"\n\n", ConfigManager::instance().getCombinedIncludeFilename().string());
                 fmt::print(file, "using namespace {};\n\n", package);
             }
 
@@ -273,14 +229,14 @@ class SDKGenerator {
 
                     //if (filename.find("parameters") != std::string::npos && std::is_same_v<T, UFunctionEntry>) {
                     //    if (emittedEntries.contains(entry)) {
-                    //        getLogger()->log("skipping duplicate entry {}", entry->getParamKey());
+                    //        Logger::instance().log("skipping duplicate entry {}", entry->getParamKey());
                     //        continue;
                     //    }
 
                     //    emittedEntries.insert(entry);
-                    //    //getLogger()->log("param key: {}", entry->getParamKey());
+                    //    //Logger::instance().log("param key: {}", entry->getParamKey());
                     //    //if (emittedParams.contains(entry->getParamKey())) {
-                    //    //    getLogger()->log("skipping duplicate params");
+                    //    //    Logger::instance().log("skipping duplicate params");
                     //    //    continue;
                     //    //}
                     //    emittedParams.insert(entry->getParamKey());
@@ -304,25 +260,24 @@ class SDKGenerator {
     }
 
     auto generateSDK() -> bool {
-        const auto schemaFile = fs::path(getConfig()->getGameConfigDir() / "Schema.h");
+        const auto schemaFile = fs::path(ConfigManager::instance().getGameConfigDir() / "Schema.h");
 
         times().tStart = BenchmarkTimes::mark();
 
-        getLogger()->log("Parsing Schema.h...");
-        SchemaLoader::create();
+        Logger::instance().log("Parsing Schema.h...");
         SchemaLoader::instance().load(schemaFile.string());
-        //SchemaLoader::instance().describe();
         times().tSchema = BenchmarkTimes::mark();
 
-        getLogger()->log("Populating Runtime...");
+        Logger::instance().log("Creating runtime...");
         Runtime::create();
 
+        Logger::instance().log("Populating Runtime...");
         if (!RuntimeGen::populate()) {
-            getLogger()->log("[ERROR] Could not initialize Runtime. Check patterns and offsets and such.");
+            Logger::instance().log("[ERROR] Could not initialize Runtime. Check patterns and offsets and such.");
             return false;
         }
 
-        getLogger()->log("Initializing ObjectStore...");
+        Logger::instance().log("Initializing ObjectStore...");
         ObjectStore::instance().initialize();
 
         times().tCache = BenchmarkTimes::mark();
@@ -345,7 +300,7 @@ class SDKGenerator {
                 }
                 const auto schemaStruct = SchemaLoader::instance().getStruct(s->getNameCPP());
                 if (schemaStruct && schemaStruct->isFinal) {
-                    //getLogger()->log("skipping: {} (final)", s->getNameCPP());
+                    //Logger::instance().log("skipping: {} (final)", s->getNameCPP());
                     return;
                 }
                 s->emit(f, package);
@@ -385,12 +340,12 @@ class SDKGenerator {
 
                 const auto schemaClass = SchemaLoader::instance().getClass(c->getNameCPP());
                 if (schemaClass && schemaClass->isFinal) {
-		    Logger::log("skipping: {} (final)", c->getNameCPP());
+		    Logger::instance().log("skipping: {} (final)", c->getNameCPP());
                     return;
                 }
 
                 if (schemaClass && schemaClass->isReplace) {
-                    Logger::log("replacing: {}", c->getNameCPP());
+                    Logger::instance().log("replacing: {}", c->getNameCPP());
                     schemaClass->emitSource(file);
                     return;
                 }
@@ -503,23 +458,23 @@ class SDKGenerator {
                 return key(a) < key(b);
             });
 
-            FILE* includesFile = fopen(getConfig()->getCombinedIncludeFilenameAbs().string().c_str(), "w"); // NOLINT
-	    Logger::log( "includes file {}", getConfig()->getCombinedIncludeFilenameAbs().string().c_str());
+            FILE* includesFile = fopen(ConfigManager::instance().getCombinedIncludeFilenameAbs().string().c_str(), "w"); // NOLINT
+	    Logger::instance().log( "includes file {}", ConfigManager::instance().getCombinedIncludeFilenameAbs().string().c_str());
             fputs(cowsay::say("Fixed your 11-year inheritance bug").c_str(), includesFile);
             fputs("\n#pragma once\n\n", includesFile);
-            fputs(getConfig()->getCombinedIncludeForwardDeclarations().c_str(), includesFile);
+            fputs(ConfigManager::instance().getCombinedIncludeForwardDeclarations().c_str(), includesFile);
             fputs("#include \"Flags.h\"\n", includesFile);
             fputs("#include \"Schema.h\"\n\n", includesFile);
             fputs("#include \"Runtime.h\"\n\n", includesFile);
             for (const auto& h : headers) {
-                //fmt::print(includesFile, "#include \"{}/{}\"\n", getConfig()->getHeaderPathRel().string(), h.c_str());
+                //fmt::print(includesFile, "#include \"{}/{}\"\n", ConfigManager::instance().getHeaderPathRel().string(), h.c_str());
                 fmt::print(includesFile, "#include \"{}\"\n", h.c_str());
             }
             fclose(includesFile);
         }
 
         if (!copyFiles()) {
-            getLogger()->log("[ERROR] Failed to copy files");
+            Logger::instance().log("[ERROR] Failed to copy files");
             return false;
         }
 
@@ -527,9 +482,9 @@ class SDKGenerator {
 
         times().tIncludes = BenchmarkTimes::mark();
 
-        getLogger()->log(" Exporting GNames...");
+        Logger::instance().log(" Exporting GNames...");
         RuntimeGen::dumpFNames();
-        getLogger()->log(" Exporting GObjects...");
+        Logger::instance().log(" Exporting GObjects...");
         RuntimeGen::dumpUObjects();
 
         times().tExportMaps = BenchmarkTimes::mark();
@@ -542,19 +497,19 @@ class SDKGenerator {
 
     auto copyFiles() const -> bool {
         std::unordered_map<fs::path, fs::path> filesToMove;
-        filesToMove[getConfig()->getGameConfigDir() / "Flags.h"]     = getConfig()->getHeaderDirAbs();
-        filesToMove[getConfig()->getGameConfigDir() / "Schema.h"]    = getConfig()->getHeaderDirAbs();
-        filesToMove[getConfig()->getGameConfigDir() / "Schema.cpp"]  = getConfig()->getImplementationDirAbs();
-        filesToMove[getConfig()->getConfigEngineDir() / "Runtime.h"]   = getConfig()->getHeaderDirAbs();
-        filesToMove[getConfig()->getConfigEngineDir() / "Runtime.cpp"] = getConfig()->getImplementationDirAbs();
+        filesToMove[ConfigManager::instance().getGameConfigDir() / "Flags.h"]     = ConfigManager::instance().getHeaderDirAbs();
+        filesToMove[ConfigManager::instance().getGameConfigDir() / "Schema.h"]    = ConfigManager::instance().getHeaderDirAbs();
+        filesToMove[ConfigManager::instance().getGameConfigDir() / "Schema.cpp"]  = ConfigManager::instance().getImplementationDirAbs();
+        filesToMove[ConfigManager::instance().getConfigEngineDir() / "Runtime.h"]   = ConfigManager::instance().getHeaderDirAbs();
+        filesToMove[ConfigManager::instance().getConfigEngineDir() / "Runtime.cpp"] = ConfigManager::instance().getImplementationDirAbs();
 
-        for (auto [fromFileAbs, toDir] : filesToMove) {
+        for (const auto& [fromFileAbs, toDir] : filesToMove) {
             std::error_code ec;
             auto toFileAbs = fs::path(toDir / fromFileAbs.filename());
 
             std::ifstream inFileStream(fromFileAbs);
             if (!inFileStream.is_open()) {
-                getLogger()->log("[ERROR] Failed to open source file: {}", fromFileAbs.string());
+                Logger::instance().log("[ERROR] Failed to open source file: {}", fromFileAbs.string());
                 return false;
             }
             std::string content((std::istreambuf_iterator(inFileStream)),
@@ -563,7 +518,7 @@ class SDKGenerator {
 
             std::ofstream outFileStream(toFileAbs);
             if (!outFileStream.is_open()) {
-                getLogger()->log("[ERROR] Failed to create destination file: {}", toFileAbs.string());
+                Logger::instance().log("[ERROR] Failed to create destination file: {}", toFileAbs.string());
                 return false;
             }
             fmt::print(outFileStream,
@@ -584,24 +539,24 @@ class SDKGenerator {
         const auto invalidCount = ObjectStore::instance().getInvalidCount();
         const double percent = static_cast<double>(invalidCount) / totalSeen * 100.0; // NOLINT(*-narrowing-conversions)
 
-        getLogger()->log("\nFile's done!\n");
-        getLogger()->log("Summary:\n");
-        getLogger()->log("  GObjObjects:       {}", totalGObjObjectCount);
-        getLogger()->log("  Unique addresses:  {}", totalSeen);
-        getLogger()->log("  Invalid UObjects:  {} ({:.2f}%)", invalidCount, percent);
+        Logger::instance().log("\nFile's done!\n");
+        Logger::instance().log("Summary:\n");
+        Logger::instance().log("  GObjObjects:       {}", totalGObjObjectCount);
+        Logger::instance().log("  Unique addresses:  {}", totalSeen);
+        Logger::instance().log("  Invalid UObjects:  {} ({:.2f}%)", invalidCount, percent);
 
         if (invalidCount) {
-            getLogger()->log("Invalid UObject Summary:");
+            Logger::instance().log("Invalid UObject Summary:");
 
             std::unordered_map<InvalidUObjectReason, size_t> reasonCounts;
             for (const auto& [reason, count] : reasonCounts) {
-                getLogger()->log("  • {:<28} {:>5}", toString(reason), count);
+                Logger::instance().log("  • {:<28} {:>5}", toString(reason), count);
             }
         }
 
-        getLogger()->log("");
+        Logger::instance().log("");
         auto logTime = [&](const char* label, double seconds) {
-            getLogger()->log("  {:<15}{:>7.3f}s", label, seconds);
+            Logger::instance().log("  {:<15}{:>7.3f}s", label, seconds);
         };
 
         logTime("Schema:",       BenchmarkTimes::delta(times().tStart,      times().tSchema));
@@ -614,31 +569,18 @@ class SDKGenerator {
         logTime("Enums:",        BenchmarkTimes::delta(times().tConsts,     times().tEnums));
         logTime("Includes:",     BenchmarkTimes::delta(times().tEnums,      times().tIncludes));
         logTime("Obj/Name Dump:",BenchmarkTimes::delta(times().tIncludes,   times().tExportMaps));
-        getLogger()->log("  =======================\r\b");
+        Logger::instance().log("  =======================\r\b");
         logTime("️Total:",    BenchmarkTimes::delta(times().tStart,      times().tEnd));
     }
 
   private:
-    auto getConfig() const -> ConfigManager* {
-        if (config_ == nullptr) { config_ = &ConfigManager::instance(); }
-        return config_;
-    }
-
-    [[nodiscard]] auto getLogger() const -> Logger* {
-        if (logger_ == nullptr) { logger_ = &Logger::instance(); }
-        return logger_;
-    }
-
-    mutable Logger* logger_;
-    mutable ConfigManager* config_;
-
-    static auto times() -> BenchmarkTimes& {
+    auto times() const -> BenchmarkTimes& {
         static BenchmarkTimes t;
         return t;
     }
 
     // sort header files - core first, engine second, then sorted by `_type`
-    static auto headerSortKey() {
+    auto headerSortKey() {
         return [](const std::string& name)
             -> std::tuple<int, std::string, int>
         {

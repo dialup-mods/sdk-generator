@@ -55,7 +55,6 @@ set(INCLUDES
 
     ${GAME_CONFIG_DIR}
     ${ENGINE_DIR}
-
 )
 
 set(EXTERNAL_INCLUDES

@@ -17,9 +17,19 @@ struct DeleteRange {
 };
 
 class SchemaLoader {
-    static inline SchemaLoader* instance_{nullptr};
-public:
     SchemaLoader() = default;
+    ~SchemaLoader() = default;
+
+public:
+    static auto instance() -> SchemaLoader& {
+        static SchemaLoader inst;
+        return inst;
+    }
+
+    SchemaLoader(SchemaLoader&&) = delete;
+    SchemaLoader(const SchemaLoader&) = delete;
+    auto operator=(SchemaLoader&&) -> SchemaLoader& = delete;
+    auto operator=(const SchemaLoader&) -> SchemaLoader& = delete;
 
     auto file() const -> std::filesystem::path {
         return ConfigManager::instance().getGameConfigSchemaFile();
@@ -38,23 +48,18 @@ public:
         file << contents;
     }
 
-    static void create() {
-        if (!instance_) instance_ = new SchemaLoader();
-    }
-
-    static void yeet() {
-        delete instance_;
-        instance_ = nullptr;
-    }
-
-    static auto instance() -> SchemaLoader& {
-        return *instance_;
-    }
-
     auto load(const std::string& filepath) -> bool {
         // todo, validate
         filepath_ = filepath;
         schemaContents_ = readFile();
+
+        // keep libclang loaded to prevent crash on unload
+        // i'm tired, boss
+        HMODULE hClang = LoadLibraryA("libclang.dll");
+        if (hClang) {
+            // increment ref count so it doesn't unload with us
+            LoadLibraryA("libclang.dll");
+        }
 
         const char* args[] = {"-x", "c++", "-std=c++20"};
 
@@ -107,7 +112,7 @@ public:
 
         visitChildren(rootCursor, [this, needle, &insertionPoint](Cursor c) {
             // make sure we haven't traversed beyond our schema file
-            CXSourceLocation loc = clang_getCursorLocation(c.raw());
+            const CXSourceLocation loc = clang_getCursorLocation(c.raw());
             CXFile file;
             unsigned line, column, offset;
             clang_getExpansionLocation(loc, &file, &line, &column, &offset);
@@ -119,7 +124,7 @@ public:
                 return CXChildVisit_Continue;
             }
 
-            //Logger::log("Cursor: {} ({})\n", c.spelling(), c.kindSpelling());
+            //Logger::instance().log("Cursor: {} ({})\n", c.spelling(), c.kindSpelling());
 
             if (c.kind() == CXCursor_StructDecl || c.kind() == CXCursor_ClassDecl || c.kind() == CXCursor_ClassTemplate) {
                 if (c.spelling() == needle) {
@@ -148,27 +153,17 @@ public:
         return insertionPoint;
     }
 
-    void shutdown() const {
-        if (translationUnit_ != nullptr) {
-            clang_disposeTranslationUnit(translationUnit_);
-        }
-
-        if (index_ != nullptr) {
-            clang_disposeIndex(index_);
-        }
-    }
-
     void describe() const {
-        Logger::log("======== SCHEMA =======");
+        Logger::instance().log("======== SCHEMA =======");
         const auto& classes = getClasses();
 
-        Logger::log("====== classes ======");
-        for (const auto& [className, cls] : classes) {
-            Logger::log("Class: {}", className.empty() ? "" : className);
+        Logger::instance().log("====== classes ======");
+        for (const auto& className : classes | std::views::keys) {
+            Logger::instance().log("Class: {}", className.empty() ? "" : className);
         }
 
         for (const auto& [className, cls] : classes) {
-            Logger::log("Class: {}", className.empty() ? "" : className);
+            Logger::instance().log("Class: {}", className.empty() ? "" : className);
 
             for (const auto& func : cls.methods | std::views::values) {
                 std::string signature = fmt::format(
@@ -184,10 +179,10 @@ public:
                 }
 
                 signature += ")";
-                Logger::log("{}", signature);
+                Logger::instance().log("{}", signature);
             }
 
-            Logger::log(""); // blank line between classes
+            Logger::instance().log(""); // blank line between classes
         }
     }
 
@@ -203,27 +198,27 @@ public:
         classes_[className].methods[func.name] = std::move(func);
     }
 
-    [[nodiscard]] auto getClasses() const -> const std::unordered_map<std::string, SchemaClass>& {
+    auto getClasses() const -> const std::unordered_map<std::string, SchemaClass>& {
         return classes_;
     }
 
-    [[nodiscard]] auto getClassPtr(const std::string& name) const -> const SchemaClass* {
+    auto getClassPtr(const std::string& name) const -> const SchemaClass* {
         const auto it = classes_.find(name);
         return it != classes_.end() ? &it->second : nullptr;
     }
 
-    [[nodiscard]] auto getClass(const std::string& name) -> SchemaClass* {
+    auto getClass(const std::string& name) -> SchemaClass* {
         const auto it = classes_.find(name);
         return it != classes_.end() ? &it->second : nullptr;
     }
 
-    [[nodiscard]] auto getStruct(const std::string& name) -> SchemaStruct* {
+    auto getStruct(const std::string& name) -> SchemaStruct* {
         const auto it = structs_.find(name);
         return it != structs_.end() ? &it->second : nullptr;
     }
 
     void finalize() {
-        //Logger::log("finalize");
+        //Logger::instance().log("finalize");
         for (const auto& schemaClass : instance().getClasses() | std::views::values) {
             if (schemaClass.shouldDelete) {
                 // Delete the whole class block
@@ -255,9 +250,9 @@ public:
         for (const auto& range : rangesToDelete_) {
             if (range.start < schemaContents.size() && range.end <= schemaContents.size()) {
                 schemaContents.erase(range.start, range.end - range.start);
-                //Logger::log("Deleting processed class: {}", range.name);
+                //Logger::instance().log("Deleting processed class: {}", range.name);
             } else {
-                //Logger::log("Invalid range: ", range.start, "-", range.end);
+                //Logger::instance().log("Invalid range: ", range.start, "-", range.end);
             }
         }
 
@@ -283,7 +278,7 @@ private:
                 return CXChildVisit_Continue;
             }
 
-            //Logger::log("Cursor: {} ({})\n", c.spelling(), c.kindSpelling());
+            //Logger::instance().log("Cursor: {} ({})\n", c.spelling(), c.kindSpelling());
 
             if (c.kind() == CXCursor_StructDecl) {
                 if (c.shouldSkip()) { return CXChildVisit_Continue; }
@@ -317,7 +312,7 @@ private:
                 std::optional<SourceLocation> injectStartPosition{};
                 std::optional<SourceLocation> injectEndPosition{};
 
-                //Logger::log("Class found: {}", c.spelling());
+                //Logger::instance().log("Class found: {}", c.spelling());
 
                 if (c.shouldSkip()) { return CXChildVisit_Continue; }
 

@@ -3,37 +3,25 @@
 
 #include "Terminal.h"
 #include "SDKGenerator.h"
+#include "MessageBox.h"
 
 auto WINAPI
-Worker(const LPVOID lpParam) -> DWORD {
-    Sleep(100);
-    const auto handle = static_cast<HMODULE>(lpParam);
-
+Worker(void*) -> DWORD {
     terminal::tryHookConsoleIO();
-
     {
         SDKGenerator generator;
         generator.run();
-        generator.yeet();
     }
 
-    Sleep(100);
+    auto handle = GetModuleHandle("DialUp-SDKGen.dll");
 
-    // Check if DLL is still referenced
-    HMODULE testHandle = nullptr;
-    if (GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, reinterpret_cast<LPCSTR>(handle), &testHandle)) { // NOLINT
-        printf("Warning: DLL %p still has active references\n", handle);
-    }
-
-    // Get module info for flushing
     MODULEINFO modInfo{};
     if (GetModuleInformation(GetCurrentProcess(), handle, &modInfo, sizeof(modInfo))) {
         FlushInstructionCache(GetCurrentProcess(), modInfo.lpBaseOfDll, modInfo.SizeOfImage);
     }
 
-    terminal::tryFreeConsole();
-
-    FreeLibraryAndExitThread(static_cast<HMODULE>(lpParam), 0);
+    Sleep(200);
+    FreeLibraryAndExitThread(handle, 0);
 }
 
 BOOL APIENTRY

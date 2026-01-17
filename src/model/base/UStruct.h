@@ -10,10 +10,7 @@
 #include "ObjectStore.h"
 #include "Property.h"
 #include "StructLike.h"
-
-static ptrdiff_t roundUp(const ptrdiff_t val, const ptrdiff_t align) {
-    return (val + align - 1) & ~(align - 1);
-}
+#include "StructWalker.h"
 
 class UStructEntry final
   : public StructLikeEntry, LayoutTraits<UStruct, UField> {

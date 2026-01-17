@@ -35,7 +35,7 @@ public:
         }
 
         if (rawProp->Class->GetName() != "MapProperty") {
-            Logger::log("  WARNING: This property is not a real UMapProperty! it's a {}", rawProp->Class->GetName());
+            Logger::instance().log("  WARNING: This property is not a real UMapProperty! it's a {}", rawProp->Class->GetName());
             return EMPTY_STR_SET;
         }
 
@@ -52,11 +52,11 @@ public:
         auto keyDeps = keyEntry->getStructDependencyTypes();
         auto valDeps = valEntry->getStructDependencyTypes();
 
-        Logger::log("MapProperty: {}", getFullName());
-        Logger::log("  Key: {} → {}", (void*)mapProp->Key, keyEntry ? keyEntry->getFullName() : "null");
-        Logger::log("  Val: {} → {}", (void*)mapProp->Value, valEntry ? valEntry->getFullName() : "null");
-        Logger::log("  Key canonical: {}", keyEntry ? keyEntry->getCanonicalType() : "n/a");
-        Logger::log("  Val canonical: {}", valEntry ? valEntry->getCanonicalType() : "n/a");
+        Logger::instance().log("MapProperty: {}", getFullName());
+        Logger::instance().log("  Key: {} → {}", (void*)mapProp->Key, keyEntry ? keyEntry->getFullName() : "null");
+        Logger::instance().log("  Val: {} → {}", (void*)mapProp->Value, valEntry ? valEntry->getFullName() : "null");
+        Logger::instance().log("  Key canonical: {}", keyEntry ? keyEntry->getCanonicalType() : "n/a");
+        Logger::instance().log("  Val canonical: {}", valEntry ? valEntry->getCanonicalType() : "n/a");
 
         dependencyTypes_.insert(keyEntry->getFullName());  // this ensures Foo gets walked
         dependencyTypes_.insert(valEntry->getFullName());

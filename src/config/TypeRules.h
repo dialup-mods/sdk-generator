@@ -83,18 +83,18 @@ public:
 
     [[nodiscard]] auto isBlacklisted(std::string_view typeName) const -> bool {
         if (blacklistExact_.contains(typeName)) {
-            Logger::log("[Blacklist] {} (exact)", typeName);
+            Logger::instance().log("[Blacklist] {} (exact)", typeName);
             return true;
         }
         for (const auto& sub : blacklistContains_) {
             if (typeName.find(sub) != std::string_view::npos) {
-                Logger::log("[Blacklist] {} (contains)", typeName);
+                Logger::instance().log("[Blacklist] {} (contains)", typeName);
                 return true;
             }
         }
         for (const auto& re : blacklistRegex_) {
             if (std::regex_match(typeName.begin(), typeName.end(), re)) {
-                Logger::log("[Blacklist] {} (regex)", typeName);
+                Logger::instance().log("[Blacklist] {} (regex)", typeName);
                 return true;
             }
         }

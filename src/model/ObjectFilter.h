@@ -31,7 +31,7 @@ inline auto getFilteredStructs() -> GroupedStructResults {
     std::unordered_map<std::string, UScriptStructEntry*> bestByName;
 
     for (auto* s : ObjectStore::instance().getAllStructEntries()) {
-        if (!s) { Logger::log("[WARNING] struct was null"); continue; }
+        if (!s) { Logger::instance().log("[WARNING] struct was null"); continue; }
 
         s->deps();
         //s->iterateProperties();
@@ -77,7 +77,7 @@ inline auto getEnumsGroupedByPackage() -> GroupedBase {
 
     for (const auto& entry : ObjectStore::instance().getAllEnumEntries()) {
         const std::string& key = entry->getName();
-        //Logger::log("enum name: {}", key);
+        //Logger::instance().log("enum name: {}", key);
 
         if (seen.insert(key).second) {
             allEnums.emplace_back(entry);

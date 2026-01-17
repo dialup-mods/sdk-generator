@@ -6,8 +6,6 @@
 #include "TArrayValidator.h"
 
 auto RuntimeGen::populate() -> bool {
-    const auto config = ConfigManager::instance();
-
     auto logAddress = [&](const char* label, uintptr_t ptr) {
         Logger::instance().log("{:<17}{:>15}", label, fmt::format("{:#x}", ptr));
     };
@@ -17,11 +15,11 @@ auto RuntimeGen::populate() -> bool {
     logAddress("Base address:", baseAddress);
 
     { // FNameEntries
-        const auto fNameEntriesMethod = config.getFNameEntriesMethod();
+        const auto fNameEntriesMethod = ConfigManager::instance().getFNameEntriesMethod();
 
         if (fNameEntriesMethod == "pattern") {
-            const auto fNameEntriesPattern = config.getFNameEntriesPattern();
-            const auto fNameEntriesMask = config.getFNameEntriesMask();
+            const auto fNameEntriesPattern = ConfigManager::instance().getFNameEntriesPattern();
+            const auto fNameEntriesMask = ConfigManager::instance().getFNameEntriesMask();
 
             if (fNameEntriesPattern.empty() || fNameEntriesMask.empty()) {
                 Logger::instance().log("[ERROR] FNameEntries pattern or mask is not set.");
@@ -39,7 +37,7 @@ auto RuntimeGen::populate() -> bool {
             logAddress("FNameEntries offset:", memory::getOffset(Runtime::getFNameEntriesPtr()));
 
         } else if (fNameEntriesMethod == "offset") {
-            Runtime::setFNameEntries(reinterpret_cast<TArray<FNameEntry*>*>(baseAddress + config.getFNameEntriesOffset()));
+            Runtime::setFNameEntries(reinterpret_cast<TArray<FNameEntry*>*>(baseAddress + ConfigManager::instance().getFNameEntriesOffset()));
             logAddress("FNameEntries address:", reinterpret_cast<uintptr_t>(Runtime::getFNameEntriesPtr()));
             logAddress("FNameEntries offset:", memory::getOffset(Runtime::getFNameEntriesPtr()));
         }
@@ -51,7 +49,7 @@ auto RuntimeGen::populate() -> bool {
     }
 
     { // UObjects
-        const auto uObjectsMethod = config.getUObjectsMethod();
+        const auto uObjectsMethod = ConfigManager::instance().getUObjectsMethod();
 
         // fixme check against nullptr before setting UObjects
         if (uObjectsMethod == "offsetFromFNameEntries") {
@@ -66,18 +64,18 @@ auto RuntimeGen::populate() -> bool {
             logAddress("UObjects offset:", memory::getOffset(Runtime::getUObjectsPtr()));
 
         } else if (uObjectsMethod == "offset") {
-            const uintptr_t uObjectsAddress = baseAddress + config.getUObjectsOffset();
+            const uintptr_t uObjectsAddress = baseAddress + ConfigManager::instance().getUObjectsOffset();
             if (!memory::isReadable(uObjectsAddress)) {
                 Logger::instance().log("[ERROR] Could not read memory at address.");
                 return false;
             }
-            Runtime::setUObjects(reinterpret_cast<TArray<UObject*>*>(baseAddress + config.getUObjectsOffset()));
+            Runtime::setUObjects(reinterpret_cast<TArray<UObject*>*>(baseAddress + ConfigManager::instance().getUObjectsOffset()));
             logAddress("UObjects address:", reinterpret_cast<uintptr_t>(Runtime::getUObjectsPtr()));
             logAddress("UObjects offset:", memory::getOffset(Runtime::getUObjectsPtr()));
 
         } else if (uObjectsMethod == "pattern") {
-            const uintptr_t gObjectAddress = memory::findPattern(config.getUObjectsPattern(), config.getUObjectsMask());
-            const uintptr_t uObjectsAddress = baseAddress + config.getUObjectsOffset();
+            const uintptr_t gObjectAddress = memory::findPattern(ConfigManager::instance().getUObjectsPattern(), ConfigManager::instance().getUObjectsMask());
+            const uintptr_t uObjectsAddress = baseAddress + ConfigManager::instance().getUObjectsOffset();
             if (!memory::isReadable(uObjectsAddress)) {
                 Logger::instance().log("[ERROR] Could not read memory at address.");
                 return false;
@@ -123,8 +121,7 @@ auto RuntimeGen::populate() -> bool {
 }
 
 void RuntimeGen::dumpUObjects() {
-    const auto config = ConfigManager::instance();
-    auto file = fopen(config.getObjectDumpFilepath().string().c_str(), "w"); // NOLINT
+    auto file = fopen(ConfigManager::instance().getObjectDumpFilepath().string().c_str(), "w"); // NOLINT
     if (!file) return;
 
     for (int32_t i = 0; i < Runtime::getUObjects().size() - 1; ++i) {
@@ -145,8 +142,7 @@ void RuntimeGen::dumpUObjects() {
 }
 
 void RuntimeGen::dumpFNames() {
-    const auto config = ConfigManager::instance();
-    auto file = fopen(config.getFNameEntriesDumpFilepath().string().c_str(), "w"); // NOLINT
+    auto file = fopen(ConfigManager::instance().getFNameEntriesDumpFilepath().string().c_str(), "w"); // NOLINT
     if (!file) return;
 
     for (const auto nameEntry : *Runtime::getFNameEntriesPtr()) {

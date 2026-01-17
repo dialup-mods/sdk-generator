@@ -37,8 +37,8 @@ struct SchemaMethod {
 
         signature += ")";
 
-        Logger::log("[ERROR] UNIMPLEMENTED whoops");
-        //Logger::log("Emitting from Schema.h {}", signature);
+        Logger::instance().log("[ERROR] UNIMPLEMENTED whoops");
+        //Logger::instance().log("Emitting from Schema.h {}", signature);
     }
 };
 

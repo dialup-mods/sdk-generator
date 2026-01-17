@@ -42,26 +42,19 @@
 #include "MessageBox.h"
 
 class ConfigManager {
-    static inline ConfigManager* instance_{nullptr};
-  public:
     ConfigManager() = default;
+    ~ConfigManager() = default;
 
-    static void create() {
-        if (!instance_) instance_ = new ConfigManager();
-    }
-
+public:
     static auto instance() -> ConfigManager& {
-        return *instance_;
+        static ConfigManager inst;
+        return inst;
     }
 
-    static auto instanceMaybe() -> ConfigManager* {
-        return instance_;
-    }
-
-    static void yeet() {
-        delete instance_;
-        instance_ = nullptr;
-    }
+    ConfigManager(ConfigManager&&) = delete;
+    ConfigManager(const ConfigManager&) = delete;
+    auto operator=(ConfigManager&&) -> ConfigManager& = delete;
+    auto operator=(const ConfigManager&) -> ConfigManager& = delete;
 
     auto load() const -> bool {
         const auto configFile = std::filesystem::path(CONFIG_DIR) / std::format("{}.yaml", GAME_NAME);

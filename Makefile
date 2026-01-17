@@ -32,3 +32,6 @@ inject: check-shell
 	@bash -lc 'cp -v "$(BUILD_DIR)/$(DLL)" "$(binary_dir)/$(DLL)"'
 	@powershell -NoLogo -NoProfile -Command "cmd /C 'call \"$(INJECTOR)\" \"${target}\" \"${DLL}\"'"
 	@bash -lc 'rm "$(binary_dir)/$(DLL)"'
+
+ls-procs: check-shell
+	powershell -Command "tasklist /m DialUp-SDKGen.dll"

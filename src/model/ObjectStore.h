@@ -1,7 +1,6 @@
 #pragma once
 #include <complex>
 #include <memory>
-#include <ranges>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -40,19 +39,19 @@ inline auto toString(const InvalidUObjectReason reason) -> std::string {
 }
 
 class ObjectStore {
-  public:
-    static void create() {
-        if (!instance_) instance_ = new ObjectStore();
-    }
+    ObjectStore() = default;
+    ~ObjectStore() = default;
 
-    static void yeet() {
-        delete instance_;
-        instance_ = nullptr;
-    }
-
+public:
     static auto instance() -> ObjectStore& {
-        return *instance_;
+        static ObjectStore inst;
+        return inst;
     }
+
+    ObjectStore(ObjectStore&&) = delete;
+    ObjectStore(const ObjectStore&) = delete;
+    auto operator=(ObjectStore&&) -> ObjectStore& = delete;
+    auto operator=(const ObjectStore&) -> ObjectStore& = delete;
 
     void initialize();
 
@@ -115,7 +114,7 @@ class ObjectStore {
     auto getEntriesGroupedByPackage() -> std::unordered_map<std::string, std::vector<ObjectEntry*>> {
         std::unordered_map<std::string, std::vector<ObjectEntry*>> groupedBase;
 
-        const auto& grouped = ObjectStore::instance().getGroupedEntries<T>();
+        const auto& grouped = getGroupedEntries<T>();
         for (auto& [pkg, entries] : grouped) {
             groupedBase[pkg].insert(groupedBase[pkg].end(), entries.begin(), entries.end());
         }
@@ -123,75 +122,7 @@ class ObjectStore {
         return groupedBase;
     }
 
-    // sort deps
-    // auto order = topoSort(allStructs, [](auto* s){ return s->deps(); });
-
-
-//    template<typename Container, typename GetDeps>
-//    auto topoSort(const Container& nodes, GetDeps getDeps)
-//        -> std::vector<typename Container::value_type>
-//    {
-//        using Node = typename Container::value_type;
-//            using Node = typename Container::value_type;
-//
-//        // Compute indegrees and adjacency list
-//        std::unordered_map<Node, size_t> indegree;
-//        std::unordered_map<Node, std::vector<Node>> adj;
-//
-//        // Initialize all nodes with indegree 0
-//        for (const auto& node : nodes) {
-//            indegree[node] = 0;
-//            adj[node]; // ensure it exists
-//        }
-//
-//        // Populate indegrees and adjacency
-//        for (const auto& node : nodes) {
-//            for (auto dep : getDeps(node)) {
-//                if (!dep) continue;
-//                adj[dep].push_back(node);
-//                indegree[node]++;
-//            }
-//        }
-//
-//        // Priority queue for deterministic ordering (replace with std::queue for arbitrary order)
-//        auto cmp = [](const Node& a, const Node& b) { return a > b; };
-//        std::priority_queue<Node, std::vector<Node>, decltype(cmp)> ready(cmp);
-//
-//        // Enqueue all indegree 0 nodes
-//        for (const auto& [node, deg] : indegree) {
-//            if (deg == 0) ready.push(node);
-//        }
-//
-//        std::vector<Node> result;
-//        result.reserve(nodes.size());
-//
-//        while (!ready.empty()) {
-//            Node n = ready.top();
-//            ready.pop();
-//            result.push_back(n);
-//
-//            for (auto& neighbor : adj[n]) {
-//                if (--indegree[neighbor] == 0) {
-//                    ready.push(neighbor);
-//                }
-//            }
-//        }
-//
-//        if (result.size() != nodes.size()) {
-//            throw std::runtime_error("Cycle detected in topoSort()");
-//        }
-//
-//        return result;
-//    }
-
   private:
-    ObjectStore();
-    ~ObjectStore() = default;
-    ObjectStore(const ObjectStore&) = delete;
-    auto operator=(const ObjectStore&) -> ObjectStore& = delete;
-
-    static ObjectStore* instance_;
-
     std::unordered_map<UObject*, ObjectEntry*> objectToEntry_;
 
     std::unordered_map<std::string, ObjectEntry*> nameToEntry_;

@@ -33,10 +33,6 @@
 #include "UStrProperty.h"
 #include "UStructProperty.h"
 
-ObjectStore* ObjectStore::instance_ = nullptr;
-
-ObjectStore::ObjectStore() = default;
-
 auto
 ObjectStore::isProbablyValidPtr(const uintptr_t ptr) -> bool {
     if (!ptr) {
@@ -127,9 +123,9 @@ ObjectStore::initialize() {
         try {
             add(raw, "GObjObjects");
         } catch (const std::exception& e) {
-            Logger::log("[ERROR] Exception in add() at index {}: {}", i, e.what());
+            Logger::instance().log("[ERROR] Exception in add() at index {}: {}", i, e.what());
         } catch (...) {
-            Logger::log("[ERROR] Unknown error in add() at index {}", i);
+            Logger::instance().log("[ERROR] Unknown error in add() at index {}", i);
         }
 
         i++;
@@ -148,85 +144,13 @@ auto ObjectStore::existingEntryFor(const UObject* obj) const -> ObjectEntry* {
     return nullptr;
 }
 
-//bool isTransientOrJunk(UObject* obj) {
-//    return obj->HasAnyFlags(RF_Transient | RF_DefaultSubObject) ||
-//           obj->GetName().Contains("__Default");
-//}
-
-//auto ObjectStore::shouldReplace(UObject* existing, UObject* candidate) -> bool {
-//    return false;
-//}
-
-//bool shouldReplace(ObjectEntry* existing, UObject* newObj) {
-//    // Create the new entry type to compare
-//    auto newEntry = createEntry(newObj);
-//
-//    // Prefer more specific types
-//    if (typeid(*existing) == typeid(ObjectEntry) &&
-//        typeid(*newEntry) != typeid(ObjectEntry)) {
-//        return true; // Replace generic with specific
-//    }
-//
-//    // Or use some kind of type hierarchy ranking
-//    return getTypeSpecificity(newEntry) > getTypeSpecificity(existing);
-//}
-
-//void ObjectStore::maybeUpgradeUFunction(ObjectEntry* entry, UObject* rawObj) {
-//    if (auto* existingEntry = objectToEntry_[rawObj]) {
-//        // Is it a UFunctionEntry?
-//        if (auto* existingFunc = dynamic_cast<UFunctionEntry*>(existingEntry)) {
-//            // Create a temporary one to compare
-//            UFunctionEntry temp(rawObj);
-//
-//            if (temp.argumentCount() > existingFunc->argumentCount()) {
-//                Logger::log("Upgrading UFunctionEntry {} from {} → {} args",
-//                            temp.getFunctionName(),
-//                            existingFunc->argumentCount(),
-//                            temp.argumentCount());
-//
-//                auto newEntry = std::make_unique<UFunctionEntry>(rawObj);
-//                objectToEntry_[rawObj] = newEntry.get();
-//                all_.emplace_back(std::move(newEntry));
-//                return objectToEntry_[rawObj];
-//            }
-//
-//            return existingFunc;
-//        }
-//
-//        return existingEntry;
-//    }
-//}
-
-
-
 // add an object to the store and return the resulting ObjectEntry*
 // returns ObjectEntry* from object store if it exists
 // early returns nullptr if the ObjectEntry can't be created (invalid)
 // early returns nullptr if the address has been seen before but no valid entry exists
 auto ObjectStore::add(UObject* rawObj, const std::string& origin = "") -> ObjectEntry* {
-    //if (!isValid(rawObj)) {
-    //    Logger::log("⚠️ Skipping object with null class from origin: " + origin);
-    //    return nullptr;
-    //}
     if (seen_.contains(rawObj)) {
         auto* seenEntry = objectToEntry_[rawObj];
-
-//        if (auto* seenFunc = dynamic_cast<UFunctionEntry*>(seenEntry)) {
-//            UFunctionEntry temp(rawObj);
-//            if (temp.getArguments().size() > seenFunc->getArguments().size()) {
-//                Logger::log("Upgrading UFunctionEntry {} from {} to {} args",
-//                            temp.getFunctionName(),
-//                            seenFunc->getArguments().size(),
-//                            temp.getArguments().size());
-//
-//                auto upgraded = std::make_unique<UFunctionEntry>(rawObj);
-//                all_.emplace_back(std::move(upgraded));
-//                ObjectEntry* ptr = all_.back().get();
-//                objectToEntry_[rawObj] = ptr;
-//                return ptr;
-//            }
-//        }
-
         // seenEntry->addReferrer(origin);
         return seenEntry;
     }
@@ -240,9 +164,9 @@ auto ObjectStore::add(UObject* rawObj, const std::string& origin = "") -> Object
 
     std::unique_ptr<ObjectEntry> entry;
 
-    //Logger::log("class: " + rawObj->Class->GetFullName() + "\n  origin: " + origin);
-    //Logger::log("UClass::StaticClass(): " + UClass::StaticClass()->GetName());
-    //Logger::log("UScriptStruct::StaticClass(): " + UScriptStruct::StaticClass()->GetName());
+    //Logger::instance().log("class: " + rawObj->Class->GetFullName() + "\n  origin: " + origin);
+    //Logger::instance().log("UClass::StaticClass(): " + UClass::StaticClass()->GetName());
+    //Logger::instance().log("UScriptStruct::StaticClass(): " + UScriptStruct::StaticClass()->GetName());
     if (rawObj->IsA(UArrayProperty::StaticClass())) {
         entry = std::make_unique<UArrayPropertyEntry>(rawObj);
     } else if (rawObj->IsA(UStrProperty::StaticClass())) {
@@ -283,12 +207,12 @@ auto ObjectStore::add(UObject* rawObj, const std::string& origin = "") -> Object
         // fixme getFullName is empty
         nameToStruct_[entry->getFullName()] = entry.get();
     } else if (rawObj->IsA(UState::StaticClass())) {
-        //Logger::log("[WARN] UState. Not yet implemented. {}", entry->getFullName());
+        //Logger::instance().log("[WARN] UState. Not yet implemented. {}", entry->getFullName());
         return nullptr;
-        // not implemented yet
+        // fixme unimplemented
         //entry = std::make_unique<UState>(rawObj);
     } else if (rawObj->IsA(UStruct::StaticClass())) {
-        Logger::log("[WARN] Raw UStruct.");
+        Logger::instance().log("[WARN] Raw UStruct.");
         entry = std::make_unique<UStructEntry>(rawObj);
         nameToStruct_[entry->getFullName()] = entry.get();
     } else if (rawObj->IsA(UConst::StaticClass())) {
@@ -299,27 +223,22 @@ auto ObjectStore::add(UObject* rawObj, const std::string& origin = "") -> Object
     } else {
         entry = std::make_unique<ObjectEntry>(rawObj);
         // fixme getFullName will crash on invalid elements
-        Logger::log("[WARN] Using fallback type for: {}", entry->getFullName());
+        Logger::instance().log("[WARN] Using fallback type for: {}", entry->getFullName());
     }
 
     entry->setOrigin(origin);
-    //Logger::log("entry: " + entry->asString());
+    //Logger::instance().log("entry: " + entry->asString());
 
     if (!entry->isValid()) {
         // fixme getFullName will crash on invalid elements
-        Logger::log("[WARN] Invalid object detected: {}", entry->getFullName());
+        Logger::instance().log("[WARN] Invalid object detected: {}", entry->getFullName());
         return nullptr;
     }
-
-    // populate cached attrs
-    // note: may be needed in case object dies mid-run
-    //Logger::instance().log("{}", entry->asString());
 
     all_.emplace_back(std::move(entry));
 
     ObjectEntry* ptr = all_.back().get();
     objectToEntry_[rawObj] = ptr;
-
 
     return ptr;
 }
@@ -340,7 +259,7 @@ auto ObjectStore::getAllStructEntries() -> std::vector<UScriptStructEntry*> {
             result.emplace_back(static_cast<UScriptStructEntry*>(entry.get()));
         }
         //else if (entry->getType() == EClassTypes::UStruct) {
-        //    Logger::log("[ERROR] skipping UStruct, {}", entry->getFullName());
+        //    Logger::instance().log("[ERROR] skipping UStruct, {}", entry->getFullName());
         //}
     }
     return result;
@@ -394,7 +313,6 @@ ObjectStore::countStructsWithName(const std::string_view sanitizedName) -> int {
     });
 }
 
-// ReSharper disable once CppParameterMayBeConstPtrOrRef
 auto ObjectStore::get(UObject* obj) const -> ObjectEntry* {
     if (!obj) return nullptr;
     auto it = objectToEntry_.find(obj);

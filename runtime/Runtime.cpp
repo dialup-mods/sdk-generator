@@ -14,6 +14,9 @@ void SDK_API Runtime::create() {
 }
 
 auto SDK_API Runtime::instance() -> Runtime& {
+    if (!instance_) {
+        printf("[ERROR] No instance exists. Did you call `create()`?\n");
+    }
     return *instance_;
 }
 
@@ -22,7 +25,12 @@ void SDK_API Runtime::yeet() {
     instance_ = nullptr;
 }
 
-auto SDK_API Runtime::getFNameEntries() -> TArray<FNameEntry*>& { return *fNameEntries_; }
+auto SDK_API Runtime::getFNameEntries() -> TArray<FNameEntry*>& {
+    if (!fNameEntries_) {
+        printf("[ERROR] FNameEntries is null. Did you call `populate()`?\n");
+    }
+    return *fNameEntries_;
+}
 
 auto SDK_API Runtime::getFNameEntry(const int32_t index) -> FNameEntry* {
     if (index < 0 || index >= getFNameEntries().size()) {
@@ -105,7 +113,6 @@ auto SDK_API Runtime::areFNameEntriesValid() -> bool {
 
 auto SDK_API Runtime::areUObjectsPopulated() -> bool {
     if (getUObjectsPtr()->empty()) {
-        //ILogger::instance().log("UObjects not populated");
         return false;
     }
     return true;

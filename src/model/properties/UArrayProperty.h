@@ -40,10 +40,10 @@ public:
 
         // If it's a struct property, get the actual struct it references
         if (const auto* structPropEntry = innerEntry->as<UStructPropertyEntry>()) {
-            //Logger::log("struct property entry inner");
+            //Logger::instance().log("struct property entry inner");
             // Get the actual struct, but don't cast it to UStructPropertyEntry
             if (const auto* actualStruct = structPropEntry->getStructEntryAsObjectEntry()) {
-                //Logger::log("adding dep: {}", actualStruct->getFullName());
+                //Logger::instance().log("adding dep: {}", actualStruct->getFullName());
                 dependencyTypes_.insert(actualStruct->getFullName());
                 return dependencyTypes_;
             }
@@ -51,11 +51,11 @@ public:
 
         // Direct struct reference (probably rare for arrays)
         else if (const auto* structEntry = innerEntry->as<UScriptStructEntry>()) {
-            //Logger::log("scriptstruct entry");
+            //Logger::instance().log("scriptstruct entry");
             dependencyTypes_.insert(structEntry->getFullName());
             return dependencyTypes_;
         } else if (const auto* scriptStructEntry = innerEntry->as<UStructEntry>()) {
-            //Logger::log("struct entry");
+            //Logger::instance().log("struct entry");
             dependencyTypes_.insert(scriptStructEntry->getFullName());
             return dependencyTypes_;
         }

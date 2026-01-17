@@ -1,44 +1,14 @@
 #pragma once
+#include <Windows.h>
 #include <filesystem>
-#include <fstream>
 #include <iostream>
 #include <mutex>
-
-#include <Windows.h>
 
 #include "fmt/format.h"
 #include "fmt/xchar.h"
 
 #include "ConfigManager.h"
 #include "MessageBox.h"
-
-// Logger: a logger built on ~ v i b e s ~
-//
-//   A precision tool.
-//    An elegant weapon.
-//
-// Features:
-//   - RAII for modern, safe init/teardown.
-//   - Ref-counted. File opens on first instance, closes on last destruction.
-//   - ConfigManager is a proper singleton. It's been done. Why copy-paste when you can.. flex? 💪(ѻ◡⚆)👍
-//   - Totally over-engineered for a log file that should just be opened once.
-//   - Encourages weird, unnecessary stack allocation of the logger.
-//   - Tees output to console/stdout in a streamlined and totally not hacky way.
-//   - `log()` has an optional `flush` argument but real talk we flush every. single. time.
-//
-// "Features":
-//   - Awkward to use. Makes your brain tickle a bit.
-//   - Does not fit any existing pattern in this codebase.
-//   - Building was fun. It's so simple. It's so stupid.
-//   - No consideration was given to future-self who gets to implement and maintain code that uses this
-//   - It's already, predictably, used in places that aren't properly holding a ref! :D
-//
-// Usage:
-//
-//   {
-//       Logger scoped;  // log file opens here
-//       Logger::log("Wait, but why?");
-//   }  // file closes *exactly* here
 
 static std::mutex consoleMutex;
 
@@ -75,36 +45,30 @@ enshrinken(const std::wstring& input) -> std::string {
 }
 
 class Logger {
-public:
     Logger() = default;
+    ~Logger() { close(); }
+
+public:
+    static auto instance() -> Logger& {
+        static Logger inst;
+        return inst;
+    }
+
+    Logger(Logger&&) = delete;
     Logger(const Logger&) = delete;
+    auto operator=(Logger&&) -> Logger& = delete;
     auto operator=(const Logger&) -> Logger& = delete;
 
-    static void create() {
-        if (!instance_) instance_ = new Logger();
-    }
-
-    static void yeet() {
-        close();
-        delete instance_;
-        instance_ = nullptr;
-    }
-
-    static auto instance() -> Logger& {
-        return *instance_;
-    }
-
-    static void open() {
+    void open() {
         if (!handle_) {
-            const auto config = ConfigManager::instance();
-            handle_ = fopen(config.getLogFile().string().c_str(), "w"); // NOLINT
+            handle_ = fopen(ConfigManager::instance().getLogFile().string().c_str(), "w"); // NOLINT
             if (!handle_) {
-                messagebox::error("Failed to create log file: " + config.getLogFile().string());
+                messagebox::error("Failed to create log file: " + ConfigManager::instance().getLogFile().string());
             }
         }
     }
 
-    static void close() {
+    void close() {
         if (handle_) {
             fclose(handle_); // NOLINT(*-owning-memory)
             handle_ = nullptr;
@@ -126,23 +90,23 @@ public:
         auto outStr = to_string(buf);
 
         fmt::print("{}", outStr);
-        if (handle_) {
-            fmt::print(handle_, "{}", outStr);
+        if (instance().handle_) {
+            fmt::print(instance().handle_, "{}", outStr);
         }
 
         std::cout << std::flush;
-        if (handle_) {
-            fflush(handle_);
+        if (instance().handle_) {
+            fflush(instance().handle_);
         }
     }
 
     template <typename... Args>
-    static void log(fmt::format_string<Args...> fmtstr, Args&&... args) {
+    void log(fmt::format_string<Args...> fmtstr, Args&&... args) {
         logImpl(true, fmtstr, std::forward<Args>(args)...);
     }
 
     template <typename... Args>
-    static void logNoNewline(fmt::format_string<Args...> fmtstr, Args&&... args) {
+    void logNoNewline(fmt::format_string<Args...> fmtstr, Args&&... args) {
         logImpl(false, fmtstr, std::forward<Args>(args)...);
     }
 
@@ -160,7 +124,7 @@ public:
     //}
 
     template <typename... Args>
-    static void print(const bool newline, fmt::format_string<Args...> fmtstr, Args&&... args) {
+    void print(const bool newline, fmt::format_string<Args...> fmtstr, Args&&... args) {
         std::lock_guard lock(consoleMutex);
 
         thread_local fmt::memory_buffer buf;
@@ -176,19 +140,19 @@ public:
     }
 
     template <typename... Args>
-    static void print(fmt::format_string<Args...> fmtstr, Args&&... args) {
+    void print(fmt::format_string<Args...> fmtstr, Args&&... args) {
         print(true, fmtstr, std::forward<Args>(args)...);
     }
 
-    static void print(const std::string& str, const bool newline = true) {
+    void print(const std::string& str, const bool newline = true) {
         print(newline, "{}", str);
     }
 
-    static void print(const std::wstring& ws, const bool newline = true) {
+    void print(const std::wstring& ws, const bool newline = true) {
         print(newline, "{}", enshrinken(ws));
     }
 
-    static void print(const std::wstring& str, const bool bFlush = true, const bool newline = true) {
+    void print(const std::wstring& str, const bool bFlush = true, const bool newline = true) {
         std::wstring formattedMsg = fmt::format(L"{}{}", str, newline ? L"\n" : L"\b");
         std::wcout << formattedMsg.c_str();
 
@@ -197,15 +161,13 @@ public:
         if (bFlush) { fflush(handle_); }
     }
 
-    static void printRaw(std::string_view sv, bool newline = true, bool flush = true) {
+    void printRaw(std::string_view sv, bool newline = true, bool flush = true) {
         std::lock_guard lock(consoleMutex);
         std::cout << sv;
         if (newline) std::cout << '\n';
         if (flush)   std::cout << std::flush;
     }
-private:
-    ~Logger() = default;
 
+private:
     static inline FILE* handle_{nullptr};
-    static inline Logger* instance_{nullptr};
 };

@@ -132,7 +132,7 @@ public:
             if (field->IsA<UProperty>()) {
                 if (auto* cached = ObjectStore::instance().add(field, getFullName())->as<PropertyEntry>()) {
                     if (cached->isValidProperty()) {
-                        //Logger::log("adding property {} to class {}", cached->getFullName(), getFullName());
+                        //Logger::instance().log("adding property {} to class {}", cached->getFullName(), getFullName());
                         properties_.insert(cached);
                         continue;
                     }
@@ -141,7 +141,7 @@ public:
 
             if (field->IsA<UFunction>()) {
                 if (auto* cached = ObjectStore::instance().add(field, getFullName())->as<UFunctionEntry>()) {
-                    //Logger::log("adding method {} to class {}", cached->getFullName(), getFullName());
+                    //Logger::instance().log("adding method {} to class {}", cached->getFullName(), getFullName());
                     methods_.insert(cached);
                     continue;
                 }
@@ -232,7 +232,7 @@ public:
                 }
             }
             //else {
-            //    Logger::log("{} {}[{}];\n", type, propName, arrayDim);
+            //    Logger::instance().log("{} {}[{}];\n", type, propName, arrayDim);
             //}
 
             outputLines.push_back(

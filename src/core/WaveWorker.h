@@ -36,12 +36,12 @@ private:
         size_t i = 0;
 
         while (!st.stop_requested()) {
-            Logger::printRaw("\r" + chars[i % chars.size()] , false, true);
+            Logger::instance().printRaw("\r" + chars[i % chars.size()] , false, true);
             std::this_thread::sleep_for(interval_);
             i++;
         }
 
-        Logger::printRaw("\r", false, true);
+        Logger::instance().printRaw("\r", false, true);
     }
 
     void run(const std::stop_token& st) {
@@ -78,7 +78,7 @@ private:
                     glitch_burst = 1 + rand() % 8;
                 }
                 glitch_burst--;
-                Logger::printRaw("\r" + std::string(displayWidth, ' '), false, false);
+                Logger::instance().printRaw("\r" + std::string(displayWidth, ' '), false, false);
                 frame += 7 + rand() % 25;
                 std::this_thread::sleep_for(interval_ / 4);
             } else {
@@ -92,10 +92,10 @@ private:
                         shouldShiftBack = true;
                     }
                     line += "\n";
-                    Logger::printRaw(line + " ", false, false);
+                    Logger::instance().printRaw(line + " ", false, false);
                     std::this_thread::sleep_for(interval_ / 5);
                 } else {
-                    Logger::printRaw(line + " ", false, false);
+                    Logger::instance().printRaw(line + " ", false, false);
                     std::this_thread::sleep_for(interval_);
                 }
             }
@@ -103,7 +103,7 @@ private:
             frame++;
         }
 
-        Logger::printRaw("\r" + std::string(displayWidth, ' ') + "\r", false, false);
+        Logger::instance().printRaw("\r" + std::string(displayWidth, ' ') + "\r", false, false);
     }
 
     std::chrono::milliseconds interval_;
