@@ -47,8 +47,8 @@ class ConfigManager {
 
 public:
     static auto instance() -> ConfigManager& {
-        static ConfigManager inst;
-        return inst;
+        static ConfigManager instance;
+        return instance;
     }
 
     ConfigManager(ConfigManager&&) = delete;
@@ -206,6 +206,10 @@ public:
 
     auto getProcessEventMethod() const -> std::string {
         return getNestedValue<std::string>("patterns.processEvent.method");
+    }
+
+    auto getProcessEventIndex() const -> uint64_t {
+        return getNestedValue<uint64_t>("patterns.processEvent.index");
     }
 
     auto getFNameEntriesMethod() const -> std::string {
