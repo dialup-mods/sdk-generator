@@ -3,7 +3,6 @@
 
 #include "Terminal.h"
 #include "SDKGenerator.h"
-#include "MessageBox.h"
 
 auto WINAPI
 Worker(void*) -> DWORD {
