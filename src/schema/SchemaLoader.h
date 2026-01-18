@@ -22,8 +22,8 @@ class SchemaLoader {
 
 public:
     static auto instance() -> SchemaLoader& {
-        static SchemaLoader inst;
-        return inst;
+        static SchemaLoader instance;
+        return instance;
     }
 
     SchemaLoader(SchemaLoader&&) = delete;
