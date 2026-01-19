@@ -11,7 +11,7 @@
 class UArrayPropertyEntry final : public PropertyEntry, LayoutTraits<UArrayProperty, UProperty> {
 public:
     using PropertyEntry::PropertyEntry;
-    [[nodiscard]] auto getCanonicalType() const -> std::string override {
+    auto getCanonicalType() const -> std::string override {
         const auto* arrayProp = static_cast<UArrayProperty*>(getObject());
         if (!arrayProp || !arrayProp->Inner) {
             return "TArray<UNKNOWN>";
@@ -21,7 +21,7 @@ public:
         return "TArray<" + innerEntry->getCanonicalType() + ">";
     }
 
-    [[nodiscard]] auto getStructDependencyTypes() const -> const std::unordered_set<std::string>& override {
+    auto getStructDependencyTypes() const -> const std::unordered_set<std::string>& override {
         //Logger::instance().log("Getting struct deps for array property: {}", getName());
         const auto* arrayProp = static_cast<UArrayProperty*>(getObject());
         //if (!arrayProp || !arrayProp->Inner) { return {}; }
@@ -63,10 +63,10 @@ public:
         return EMPTY_STR_SET;
     }
 
-    [[nodiscard]] auto getCacheType() const -> std::string override { return "UArrayPropertyEntry"; }
-    [[nodiscard]] auto getDefaultClassName() const -> std::string override { return "UArrayProperty"; }
+    auto getCacheType() const -> std::string override { return "UArrayPropertyEntry"; }
+    auto getDefaultClassName() const -> std::string override { return "UArrayProperty"; }
 
-    [[nodiscard]] auto isTriviallyCopyable() const -> bool override {
+    auto isTriviallyCopyable() const -> bool override {
         const auto* arrayProp = static_cast<UArrayProperty*>(getObject());
         if (!arrayProp || !arrayProp->Inner) return false;
 
@@ -76,6 +76,6 @@ public:
 
         return false;
     }
-    [[nodiscard]] auto canConst() const -> bool override { return false; }
-    [[nodiscard]] auto getSize() const -> ptrdiff_t override { return sizeof(TArray<uintptr_t>); }
+    auto canConst() const -> bool override { return false; }
+    auto getSize() const -> ptrdiff_t override { return sizeof(TArray<uintptr_t>); }
 };
