@@ -217,6 +217,7 @@ public:
             } else {
                 fmt::print(file, "#include \"{}\"\n\n", ConfigManager::instance().getCombinedIncludeFilename().string());
                 fmt::print(file, "using namespace {};\n\n", package);
+		fmt::print(file, "using r = Runtime;\n\n");
             }
 
             //std::unordered_set<UFunctionEntry*> emittedEntries;
