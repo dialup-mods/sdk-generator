@@ -62,22 +62,22 @@ public:
         return getOffset() >= parentSize;
     }
 
-    [[nodiscard]] auto isArgument() const -> bool override { return isValidProperty() && (getPropertyFlags() & CPF_Parm) && !(getPropertyFlags() & CPF_OutParm) && !(getPropertyFlags() & CPF_ReturnParm); }
-    [[nodiscard]] auto isOptional() const -> bool override { return isValidProperty() && getPropertyFlags() & CPF_OptionalParm; }
-    [[nodiscard]] auto isOutParam() const -> bool override { return isValidProperty() && (getPropertyFlags() & CPF_OutParm) && (getPropertyFlags() & CPF_Parm); }
-    [[nodiscard]] auto isReturnParam() const -> bool override { return isValidProperty() && getPropertyFlags() & CPF_ReturnParm; }
-    [[nodiscard]] auto isTriviallyCopyable() const -> bool override { return false; }
-    [[nodiscard]] virtual auto canConst() const -> bool { return false; }
+    auto isArgument() const -> bool override { return isValidProperty() && (getPropertyFlags() & CPF_Parm) && !(getPropertyFlags() & CPF_OutParm) && !(getPropertyFlags() & CPF_ReturnParm); }
+    auto isOptional() const -> bool override { return isValidProperty() && getPropertyFlags() & CPF_OptionalParm; }
+    auto isOutParam() const -> bool override { return isValidProperty() && (getPropertyFlags() & CPF_OutParm) && (getPropertyFlags() & CPF_Parm); }
+    auto isReturnParam() const -> bool override { return isValidProperty() && getPropertyFlags() & CPF_ReturnParm; }
+    auto isTriviallyCopyable() const -> bool override { return false; }
+    virtual auto canConst() const -> bool { return false; }
 
     // we are at the lowest level, there's no more to iterate
-    [[nodiscard]] auto wasIterated() const -> bool override { return true; }
+    auto wasIterated() const -> bool override { return true; }
 
     // dependencies for topo sorting structs
-    [[nodiscard]] virtual auto getStructDependencyTypes() const -> const std::unordered_set<std::string>& = 0;
+    virtual auto getStructDependencyTypes() const -> const std::unordered_set<std::string>& = 0;
 
-    // UFunction args
-    [[nodiscard]] auto getFormattedArgType() const -> std::string {
+    auto getFormattedArgType() const -> std::string {
         std::string baseType = getCanonicalType();
+        // fixme
         if (getCanonicalType() == "SearchStatusOwner") {
             baseType = "ESearchStatusOwner";
         }
