@@ -267,6 +267,42 @@ public:
         return "";
     }
 
+    void setOverrideEmitName(const std::string& name) const {
+        printf("[INFO] calling setOverrideEmitName: %s\n", name.c_str());
+
+        if (name == getSanitizedName()) {
+            printf("[WARN] requested override name is the same as the original name. Not setting\n");
+            return;
+        }
+        if (name.empty()) {
+            printf("[WARN] requested override name is empty. Not setting\n");
+            return;
+        }
+        overrideEmitName_ = name;
+    }
+
+    auto getOverrideEmitName() const -> std::optional<std::string> {
+        return overrideEmitName_;
+    }
+
+
+    void setAlternateEmitName(const std::string& name) const {
+        printf("[INFO] calling setAlternateEmitName: %s\n", name.c_str());
+        if (name == getSanitizedName()) {
+            printf("[WARN] requested alternate name is the same as the original name. Not setting\n");
+            return;
+        }
+        if (name.empty()) {
+            printf("[WARN] requested alternate name is empty. Not setting\n");
+            return;
+        }
+        alternateEmitName_ = name;
+    }
+
+    auto getAlternateEmitName() const -> std::optional<std::string> {
+        return alternateEmitName_;
+    }
+
     virtual auto
     getSanitizedName() const -> std::string {
         if (sanitizedName_.empty()) {
@@ -352,6 +388,8 @@ protected:
     mutable std::string outerName_;
     mutable std::string packageName_;
     mutable std::string sanitizedName_;
+    mutable std::optional<std::string> overrideEmitName_;
+    mutable std::optional<std::string> alternateEmitName_;
     mutable std::string emitTypeStr_{"<unknown>"};
     mutable bool isOverridden_{false};
     mutable bool isBlacklisted_{false};
