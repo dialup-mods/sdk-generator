@@ -9,42 +9,42 @@ std::map<std::string, UClass*> Runtime::classCache_{};
 std::map<std::string, UFunction*> Runtime::functionCache_{};
 std::vector<UObject*> Runtime::uObjectsCache_{};
 
-void SDK_API Runtime::create() {
+SDK_API void Runtime::create() {
     if (!instance_) instance_ = new Runtime();
 }
 
-auto SDK_API Runtime::instance() -> Runtime& {
+SDK_API auto Runtime::instance() -> Runtime& {
     if (!instance_) {
         printf("[ERROR] No instance exists. Did you call `create()`?\n");
     }
     return *instance_;
 }
 
-void SDK_API Runtime::yeet() {
+SDK_API void Runtime::yeet() {
     delete instance_;
     instance_ = nullptr;
 }
 
-auto SDK_API Runtime::getFNameEntries() -> TArray<FNameEntry*>& {
+SDK_API auto Runtime::getFNameEntries() -> TArray<FNameEntry*>& {
     if (!fNameEntries_) {
         printf("[ERROR] FNameEntries is null. Did you call `populate()`?\n");
     }
     return *fNameEntries_;
 }
 
-auto SDK_API Runtime::getFNameEntry(const int32_t index) -> FNameEntry* {
+SDK_API auto Runtime::getFNameEntry(const int32_t index) -> FNameEntry* {
     if (index < 0 || index >= getFNameEntries().size()) {
         return nullptr;
     }
     return getFNameEntries()[index];
 }
 
-auto SDK_API Runtime::getFNameEntryName(const int32_t index) -> std::string {
+SDK_API auto Runtime::getFNameEntryName(const int32_t index) -> std::string {
     const FNameEntry* entry = getFNameEntry(index);
     return entry ? entry->ToString() : "";
 }
 
-auto SDK_API Runtime::findClass(const std::string& classFullName) -> UClass* {
+SDK_API auto Runtime::findClass(const std::string& classFullName) -> UClass* {
     if (classCache_.empty()) {
         for (int32_t i = 0; i < uObjects_->size() - 1; i++) {
             if (UObject* uObject = uObjects_->at(i)) {
@@ -62,7 +62,7 @@ auto SDK_API Runtime::findClass(const std::string& classFullName) -> UClass* {
     return nullptr;
 }
 
-auto SDK_API Runtime::findFunction(const std::string& functionFullName) -> UFunction* {
+SDK_API auto Runtime::findFunction(const std::string& functionFullName) -> UFunction* {
     if (functionCache_.empty()) {
         for (int32_t i = 0; i < uObjects_->size() - 1; i++) {
             if (UObject* uObject = uObjects_->at(i)) {
@@ -80,7 +80,14 @@ auto SDK_API Runtime::findFunction(const std::string& functionFullName) -> UFunc
     return nullptr;
 }
 
-auto SDK_API Runtime::findPackages() -> std::vector<UObject*> {
+SDK_API void Runtime::callProcessEvent(UObject* obj, UFunction* fn, void* params, void* result) {
+    auto vTable = reinterpret_cast<void**>(findClass("Class Core.Object")->VfTableObject.Ptr)[67];
+    using PEFunc = void(__fastcall*)(UObject*, UFunction*, void*, void*);
+    auto processEvent = reinterpret_cast<PEFunc>(vTable);
+    processEvent(obj, fn, params, result);
+}
+
+SDK_API auto Runtime::findPackages() -> std::vector<UObject*> {
     static std::vector<UObject*> packages;
     if (packages.empty()) {
         for (int i = 0; i < 10; ++i) {
@@ -92,7 +99,7 @@ auto SDK_API Runtime::findPackages() -> std::vector<UObject*> {
     return packages;
 }
 
-auto SDK_API Runtime::areFNameEntriesValid() -> bool {
+SDK_API auto Runtime::areFNameEntriesValid() -> bool {
     if (getFNameEntries().empty()) {
     	// fixme, return error string
         return false;
@@ -111,7 +118,7 @@ auto SDK_API Runtime::areFNameEntriesValid() -> bool {
     return true;
 }
 
-auto SDK_API Runtime::areUObjectsPopulated() -> bool {
+SDK_API auto Runtime::areUObjectsPopulated() -> bool {
     if (getUObjectsPtr()->empty()) {
         return false;
     }

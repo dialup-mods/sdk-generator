@@ -55,8 +55,9 @@ public:
 
     static auto getFNameEntriesPtr() -> TArray<FNameEntry*>* { return fNameEntries_; }
     static auto getFNameEntry(int32_t index) -> FNameEntry*;
-    static auto getFNameEntryName(int32_t index) -> std::string;
 
+    static auto getFNameEntryName(int32_t index) -> std::string;
+    static void callProcessEvent(UObject* obj, UFunction* fn, void* params, void* result);
     static auto findPackages() -> std::vector<UObject*>;
 
     static auto getRawObjects() -> const std::vector<UObject*>& { return uObjectsCache_; }
@@ -70,6 +71,7 @@ public:
     static void addToFunctionCache(const std::string& name, UFunction* fn) { functionCache_[name] = fn; }
 };
 
+<<<<<<< HEAD
 namespace sdk_internal {
 template<typename T>
 auto getVirtualFunction(const void* instance, const size_t index) -> T {
@@ -78,3 +80,7 @@ auto getVirtualFunction(const void* instance, const size_t index) -> T {
     );
 }
 }
+=======
+
+};
+>>>>>>> 21f1e9a (fix export macros, update PE)
