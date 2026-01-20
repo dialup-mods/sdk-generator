@@ -80,11 +80,11 @@ SDK_API auto Runtime::findFunction(const std::string& functionFullName) -> UFunc
     return nullptr;
 }
 
-SDK_API void Runtime::callProcessEvent(UObject* obj, UFunction* fn, void* params, void* result) {
+SDK_API void Runtime::callProcessEvent(UObject* obj, UFunction* fn, void* params) {
     auto vTable = reinterpret_cast<void**>(findClass("Class Core.Object")->VfTableObject.Ptr)[67];
-    using PEFunc = void(__fastcall*)(UObject*, UFunction*, void*, void*);
-    auto processEvent = reinterpret_cast<PEFunc>(vTable);
-    processEvent(obj, fn, params, result);
+    using ProcessEventFn = void(*)(UObject*, UFunction*, void*);
+    auto processEvent = reinterpret_cast<ProcessEventFn>(vTable);
+    processEvent(obj, fn, params);
 }
 
 SDK_API auto Runtime::findPackages() -> std::vector<UObject*> {
