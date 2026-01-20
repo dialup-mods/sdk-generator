@@ -17,10 +17,14 @@ file(TO_CMAKE_PATH "${CMAKE_SOURCE_DIR}/config" CONFIG_DIR)
 file(TO_CMAKE_PATH "${CMAKE_SOURCE_DIR}/../sdk-plugin/generated" SDK_OUTPUT_DIR)
 
 file(TO_CMAKE_PATH "${CONFIG_DIR}/${GAME}" GAME_CONFIG_DIR)
-file(TO_CMAKE_PATH "${CMAKE_SOURCE_DIR}/runtime" ENGINE_RUNTIME_DIR)
+file(TO_CMAKE_PATH "${CMAKE_SOURCE_DIR}/include/runtime" ENGINE_RUNTIME_DIR)
 file(TO_CMAKE_PATH "${CMAKE_SOURCE_DIR}/model" UE_MODEL_DIR)
 file(TO_CMAKE_PATH "${CMAKE_SOURCE_DIR}" LOG_DIR)
 file(TO_CMAKE_PATH "${DIALUP_INSTALL_DIR}" DIALUP_DIR)
+
+# output dirs
+file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/plugin")
+file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/plugin/generated")
 
 message("Using game: ${GAME}")
 message("Using schema from: ${CONFIG_DIR}/${GAME}")
@@ -34,7 +38,7 @@ set(SOURCES
     ${ENGINE_RUNTIME_DIR}/Runtime.cpp
     ${CMAKE_SOURCE_DIR}/src/main.cpp
     ${CMAKE_SOURCE_DIR}/src/engine/RuntimeGen.cpp
-    ${CMAKE_SOURCE_DIR}/model/ObjectStore.cpp
+    ${CMAKE_SOURCE_DIR}/include/model/ObjectStore.cpp
 )
 
 add_library(${PROJECT_NAME} SHARED ${SOURCES})
@@ -45,11 +49,11 @@ set(INCLUDES
     ${CMAKE_SOURCE_DIR}/src/config
     ${CMAKE_SOURCE_DIR}/src/core
     ${CMAKE_SOURCE_DIR}/src/engine
-    ${CMAKE_SOURCE_DIR}/model
-    ${CMAKE_SOURCE_DIR}/model/abstract
-    ${CMAKE_SOURCE_DIR}/model/base
-    ${CMAKE_SOURCE_DIR}/model/helpers
-    ${CMAKE_SOURCE_DIR}/model/properties
+    ${CMAKE_SOURCE_DIR}/include/model
+    ${CMAKE_SOURCE_DIR}/include/model/abstract
+    ${CMAKE_SOURCE_DIR}/include/model/base
+    ${CMAKE_SOURCE_DIR}/include/model/helpers
+    ${CMAKE_SOURCE_DIR}/include/model/properties
     ${CMAKE_SOURCE_DIR}/src/schema
     ${DIALUP_INSTALL_DIR}/include/v1
     ${DIALUP_INSTALL_DIR}/include/external
