@@ -8,8 +8,8 @@
 #error "CONFIG_DIR must be defined at compile time"
 #endif
 
-#ifndef ENGINE_DIR
-#error "ENGINE_DIR must be defined at compile time"
+#ifndef ENGINE_RUNTIME_DIR
+#error "ENGINE_RUNTIME_DIR must be defined at compile time"
 #endif
 
 #ifndef GAME_CONFIG_DIR
@@ -24,8 +24,12 @@
 #error "GAME_NAME must be defined at compile time"
 #endif
 
-#ifndef ENGINE_DIR
-#error "ENGINE_DIR must be defined at compile time"
+#ifndef ENGINE_RUNTIME_DIR
+#error "ENGINE_RUNTIME_DIR must be defined at compile time"
+#endif
+
+#ifndef UE_MODEL_DIR
+#error "UE_MODEL_DIR must be defined at compile time"
 #endif
 
 #ifndef DIALUP_DIR
@@ -122,7 +126,11 @@ public:
     }
 
     auto getConfigEngineDir() const -> std::filesystem::path {
-        return std::string(ENGINE_DIR);
+        return std::string(ENGINE_RUNTIME_DIR);
+    }
+
+    auto getModelDir() const -> std::filesystem::path {
+        return std::string(UE_MODEL_DIR);
     }
 
     auto getConfigDir() const -> std::filesystem::path {
@@ -146,7 +154,7 @@ public:
     }
 
     auto getEngineDir() const -> std::filesystem::path {
-        return std::string(ENGINE_DIR);
+        return std::string(ENGINE_RUNTIME_DIR);
     }
 
     auto getPlatform() const -> std::string {

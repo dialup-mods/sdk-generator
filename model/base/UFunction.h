@@ -84,6 +84,12 @@ public:
     [[nodiscard]] auto getReturnParam() const -> std::optional<PropertyEntry*> { return returnParam_; }
     [[nodiscard]] auto getOutParams() const -> std::vector<PropertyEntry*> { return outParams_; }
     [[nodiscard]] auto getAllParams() const -> std::vector<PropertyEntry*> {
+        // fixme sort by offset, if not already
+        // std::sort(parms.begin(), parms.end(),
+        // [](FProperty* a, FProperty* b)
+        // {
+        //     return a->Offset_Internal < b->Offset_Internal;
+        // });
         std::vector<PropertyEntry*> params;
 
         auto args = getArguments();
@@ -214,7 +220,8 @@ public:
             }
         }
 
-        fmt::print(file, "{} {}::{}({}) {{\n",
+        // signature
+        fmt::print(file, "SDK_API {} {}::{}({}) {{\n",
             getReturnType(),
             getClassNameCPP(),
             getMethodName(),
@@ -225,6 +232,10 @@ public:
 
         fmt::print(file, "    {} {}{{}};\n", getParamKey(), paramVar);
 
+        // NOTE:
+        // Input params may be written via memcpy at reflected offsets.
+        // Return values MUST be written by the engine and read from
+        // fn->ReturnValueOffset. Do NOT memcpy or construct ReturnValue.
         for (const PropertyEntry* arg : arguments_) {
             const auto& name = arg->getSanitizedName();
             if (arg->isTriviallyCopyable()) {
@@ -238,12 +249,12 @@ public:
 
         if (isStaticFunction()) {
             fmt::print(
-                file, "    StaticClass()->ProcessEvent(Runtime::findFunction(\"{}\"), &params, nullptr);\n"
+                file, "    r::callProcessEvent(StaticClass(), r::findFunction(\"{}\"), &params);\n"
                 , getFullName()
             );
         } else {
             fmt::print(
-                file, "    this->ProcessEvent(Runtime::findFunction(\"{}\"), &params, nullptr);\n"
+                file, "    r::callProcessEvent(this, r::findFunction(\"{}\"), &params);\n"
                 , getFullName()
             );
         }

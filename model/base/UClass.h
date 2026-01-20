@@ -38,36 +38,13 @@ public:
         return false;
     }
 
-    auto doesSuperDefineMemory() const -> bool {
-        UClass* super = getSuperFieldAsClass();
-        if (!super || !super->SuperField) {
-            return false;
-        }
-
-        const ptrdiff_t parentSize = getSuperFieldPropertySize();
-
-        for (UField* field = super->Children; field; field = field->Next) {
-            if (auto* entry = ObjectStore::instance().get(field)) {
-                if (auto* prop = entry->as<PropertyEntry>()) {
-                    if (prop->definesLayoutPast(parentSize)) {
-                        return true;
-                    }
-                }
-            }
-        }
-
-        return false;
-    }
-
     auto resolveCppBase() const -> UClass* {
         UClass* super = getSuperFieldAsClass();
 
-        // if immediate super defines layout, use it
-        if (super && super != asClass() && doesSuperDefineMemory()) {
+        if (super && super != asClass()) {
             return super;
         }
 
-        // otherwise, if this is a UObject, anchor to UObject
         if (isUObjectDerived()) {
             return UObjectClass();
         }

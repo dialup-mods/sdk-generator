@@ -17,7 +17,8 @@ file(TO_CMAKE_PATH "${CMAKE_SOURCE_DIR}/config" CONFIG_DIR)
 file(TO_CMAKE_PATH "${CMAKE_SOURCE_DIR}/../sdk-plugin/generated" SDK_OUTPUT_DIR)
 
 file(TO_CMAKE_PATH "${CONFIG_DIR}/${GAME}" GAME_CONFIG_DIR)
-file(TO_CMAKE_PATH "${CMAKE_SOURCE_DIR}/runtime" ENGINE_DIR)
+file(TO_CMAKE_PATH "${CMAKE_SOURCE_DIR}/runtime" ENGINE_RUNTIME_DIR)
+file(TO_CMAKE_PATH "${CMAKE_SOURCE_DIR}/model" UE_MODEL_DIR)
 file(TO_CMAKE_PATH "${CMAKE_SOURCE_DIR}" LOG_DIR)
 file(TO_CMAKE_PATH "${DIALUP_INSTALL_DIR}" DIALUP_DIR)
 
@@ -30,10 +31,10 @@ set(CLANG_LIBRARY "$ENV{ProgramFiles}/LLVM/lib/libclang.lib")
 
 set(SOURCES
     "${GAME_CONFIG_DIR}/Schema.cpp"
-    ${ENGINE_DIR}/Runtime.cpp
+    ${ENGINE_RUNTIME_DIR}/Runtime.cpp
     ${CMAKE_SOURCE_DIR}/src/main.cpp
     ${CMAKE_SOURCE_DIR}/src/engine/RuntimeGen.cpp
-    ${CMAKE_SOURCE_DIR}/src/model/ObjectStore.cpp
+    ${CMAKE_SOURCE_DIR}/model/ObjectStore.cpp
 )
 
 add_library(${PROJECT_NAME} SHARED ${SOURCES})
@@ -44,17 +45,17 @@ set(INCLUDES
     ${CMAKE_SOURCE_DIR}/src/config
     ${CMAKE_SOURCE_DIR}/src/core
     ${CMAKE_SOURCE_DIR}/src/engine
-    ${CMAKE_SOURCE_DIR}/src/model
-    ${CMAKE_SOURCE_DIR}/src/model/abstract
-    ${CMAKE_SOURCE_DIR}/src/model/base
-    ${CMAKE_SOURCE_DIR}/src/model/helpers
-    ${CMAKE_SOURCE_DIR}/src/model/properties
+    ${CMAKE_SOURCE_DIR}/model
+    ${CMAKE_SOURCE_DIR}/model/abstract
+    ${CMAKE_SOURCE_DIR}/model/base
+    ${CMAKE_SOURCE_DIR}/model/helpers
+    ${CMAKE_SOURCE_DIR}/model/properties
     ${CMAKE_SOURCE_DIR}/src/schema
     ${DIALUP_INSTALL_DIR}/include/v1
     ${DIALUP_INSTALL_DIR}/include/external
 
     ${GAME_CONFIG_DIR}
-    ${ENGINE_DIR}
+    ${ENGINE_RUNTIME_DIR}
 )
 
 set(EXTERNAL_INCLUDES
@@ -80,7 +81,8 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
     SDK_OUTPUT_DIR="${SDK_OUTPUT_DIR}"
     GAME_CONFIG_DIR="${GAME_CONFIG_DIR}"
     GAME_NAME="${GAME}"
-    ENGINE_DIR="${ENGINE_DIR}"
+    ENGINE_RUNTIME_DIR="${ENGINE_RUNTIME_DIR}"
+    UE_MODEL_DIR="${UE_MODEL_DIR}"
     DIALUP_DIR="${DIALUP_DIR}"
 )
 
