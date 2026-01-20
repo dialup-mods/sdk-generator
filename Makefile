@@ -6,7 +6,11 @@ include $(DIALUP_ROOT)/build-tools/rocketleague.mk
 
 BUILD_DIR        := build
 DLL              := DialUp-SDKGen.dll
-SDK_OUTPUT_DIR   := ../sdk-plugin/generated
+SDK_OUTPUT_DIR   := plugin/generated
+
+BANNER_DIRS := \
+	plugin/imported/model \
+	plugin/imported/runtime
 
 .PHONY: configure build clean inject
 
@@ -35,3 +39,16 @@ inject: check-shell
 
 ls-procs: check-shell
 	powershell -Command "tasklist /m DialUp-SDKGen.dll"
+
+configure-plugin: check-shell
+	$(call run_with_vcvars, cmake -S ./plugin -B plugin/build -G $(GENERATOR) -DCMAKE_BUILD_TYPE=RelWithDebInfo)
+
+build-plugin: check-shell
+	$(call run_with_vcvars, cmake --build plugin/build --config RelWithDebInfo)
+
+install-plugin: check-shell
+	$(call run_with_vcvars, cmake --install plugin/build --config RelWithDebInfo)
+
+clean: check-shell
+	@rm -rf plugin/build
+	@rm -rf plugin/.build-artifacts
