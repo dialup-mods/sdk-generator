@@ -236,6 +236,9 @@ public:
         // Input params may be written via memcpy at reflected offsets.
         // Return values MUST be written by the engine and read from
         // fn->ReturnValueOffset. Do NOT memcpy or construct ReturnValue.
+        // I.E.:
+        // You must allocate the params struct with the correct size and layout.
+        // You must NOT construct or assign the return value slot.
         for (const PropertyEntry* arg : arguments_) {
             const auto& name = arg->getSanitizedName();
             if (arg->isTriviallyCopyable()) {
@@ -246,6 +249,9 @@ public:
                 fmt::print(file, "    {}.{} = {};\n", paramVar, name, name);
             }
         }
+
+        // Repeat, you must NOT construct or assign the return value slot.
+        // do not be tempted to add it here
 
         if (isStaticFunction()) {
             fmt::print(
