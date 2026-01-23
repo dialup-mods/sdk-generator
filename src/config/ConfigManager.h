@@ -149,6 +149,10 @@ public:
         return std::string(SDK_OUTPUT_DIR);
     }
 
+    auto getLockFileDir() const -> std::filesystem::path {
+        return std::string(DIALUP_DIR);
+    }
+
     auto getGameConfigSchemaFile() const -> std::filesystem::path {
         return getGameConfigDir() / "Schema.h";
     }
