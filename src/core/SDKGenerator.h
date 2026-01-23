@@ -216,8 +216,9 @@ public:
 
             } else {
                 fmt::print(file, "#include \"{}\"\n\n", ConfigManager::instance().getCombinedIncludeFilename().string());
-                fmt::print(file, "using namespace {};\n\n", package);
+                fmt::print(file, "using namespace {};\n", package);
 		fmt::print(file, "using r = Runtime;\n\n");
+                fmt::print(file, "#pragma pack(push, {})\n\n", static_cast<int>(ConfigManager::instance().getFinalAlignment()));
             }
 
             //std::unordered_set<UFunctionEntry*> emittedEntries;
@@ -251,9 +252,8 @@ public:
                 if (filename.find("parameters") != std::string::npos) {
                     fmt::print(file, "}}\n");
                 }
-
-                fputs("\n#pragma pack(pop)", file);
             }
+            fputs("\n#pragma pack(pop)", file);
 
             fclose(file);
             wave.stop();
