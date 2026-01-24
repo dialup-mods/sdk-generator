@@ -42,7 +42,7 @@ public:
     static auto getUObjectsPtr() -> TArray<UObject*>* { return uObjects_; }
 
     // unsafe -- assumes initialized
-    static auto getUObjects() -> TArray<UObject*>& { return *instance().uObjects_; }
+    static auto getUObjects() -> TArray<UObject*>& { return *uObjects_; }
 
     static auto findClass(const std::string& classFullName) -> UClass*;
     static auto findFunction(const std::string& functionFullName) -> UFunction*;
@@ -57,7 +57,8 @@ public:
     static auto getFNameEntry(int32_t index) -> FNameEntry*;
 
     static auto getFNameEntryName(int32_t index) -> std::string;
-    static void callProcessEvent(UObject* obj, UFunction* fn, void* params);
+    static void callProcessEvent(UObject* self, UFunction* function, void* params);
+    static void callProcessEvent(UObject* self, UFunction* function, void* params, void* unusedResult);
     static auto findPackages() -> std::vector<UObject*>;
 
     static auto getRawObjects() -> const std::vector<UObject*>& { return uObjectsCache_; }
@@ -71,11 +72,11 @@ public:
     static void addToFunctionCache(const std::string& name, UFunction* fn) { functionCache_[name] = fn; }
 };
 
-namespace sdk_internal {
-template<typename T>
-auto getVirtualFunction(const void* instance, const size_t index) -> T {
-    return reinterpret_cast<T>(
-        (*reinterpret_cast<void***>(const_cast<void*>(instance)))[index]
-    );
-}
-}
+//namespace sdk_internal {
+//template<typename T>
+//auto getVirtualFunction(const void* instance, const size_t index) -> T {
+//    return reinterpret_cast<T>(
+//        (*reinterpret_cast<void***>(const_cast<void*>(instance)))[index]
+//    );
+//}
+//}

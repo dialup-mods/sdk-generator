@@ -27,6 +27,7 @@ SDK_API void Runtime::yeet() {
 
 SDK_API auto Runtime::getFNameEntries() -> TArray<FNameEntry*>& {
     if (!fNameEntries_) {
+        // RuntimeGen::populate() or whatever module you built to load up runtime
         printf("[ERROR] FNameEntries is null. Did you call `populate()`?\n");
     }
     return *fNameEntries_;
@@ -80,11 +81,16 @@ SDK_API auto Runtime::findFunction(const std::string& functionFullName) -> UFunc
     return nullptr;
 }
 
-SDK_API void Runtime::callProcessEvent(UObject* obj, UFunction* fn, void* params) {
-    auto vTable = reinterpret_cast<void**>(findClass("Class Core.Object")->VfTableObject.Ptr)[67];
-    using ProcessEventFn = void(*)(UObject*, UFunction*, void*);
-    auto processEvent = reinterpret_cast<ProcessEventFn>(vTable);
-    processEvent(obj, fn, params);
+using tProcessEvent = void(__fastcall*)(UObject* self, UFunction* fn, void* params, void* result);
+
+SDK_API void Runtime::callProcessEvent(UObject* self, UFunction* function, void* params, void* unusedResult) {
+    auto vtable = static_cast<void**>(findClass("Class Core.Object")->VfTableObject.Ptr);
+    auto processEvent = reinterpret_cast<tProcessEvent>(vtable[67]);
+    processEvent(self, function, params, unusedResult);
+}
+
+SDK_API void Runtime::callProcessEvent(UObject* self, UFunction* function, void* params) {
+    callProcessEvent(self, function, params, nullptr);
 }
 
 SDK_API auto Runtime::findPackages() -> std::vector<UObject*> {
