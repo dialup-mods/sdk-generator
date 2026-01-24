@@ -10,7 +10,7 @@ option(DEPLOY_TO_DEV "Copy plugin and PDB to dev plugins folder after build" OFF
 include("${DIALUP_INSTALL_DIR}/build-tools/GameBinaryDir.cmake")
 
 set(GAME "default" CACHE STRING "Name of the game config to compile with")
-set(LOG_DIR "${CMAKE_SOURCE_DIR}" CACHE STRING "Directory to create the log file in")
+set(LOG_DIR "${CMAKE_SOURCE_DIR}/log" CACHE STRING "Directory to create the log file in")
 file(TO_CMAKE_PATH "${CMAKE_SOURCE_DIR}/config" CONFIG_DIR)
 
 # fixme: make work with Makefile
@@ -65,7 +65,7 @@ set(SOURCES
     ${ENGINE_RUNTIME_DIR}/Runtime.cpp
     ${CMAKE_SOURCE_DIR}/src/main.cpp
     ${CMAKE_SOURCE_DIR}/src/engine/RuntimeGen.cpp
-    ${CMAKE_SOURCE_DIR}/include/model/ObjectStore.cpp
+    ${CMAKE_SOURCE_DIR}/include/model/store/ObjectStore.cpp
 )
 
 add_library(${PROJECT_NAME} SHARED ${SOURCES})
@@ -81,6 +81,8 @@ set(INCLUDES
     ${CMAKE_SOURCE_DIR}/include/model/base
     ${CMAKE_SOURCE_DIR}/include/model/helpers
     ${CMAKE_SOURCE_DIR}/include/model/properties
+    ${CMAKE_SOURCE_DIR}/include/model/store
+    ${CMAKE_SOURCE_DIR}/include/model/types
     ${CMAKE_SOURCE_DIR}/src/schema
     ${DIALUP_INSTALL_DIR}/include/v1
     ${DIALUP_INSTALL_DIR}/include/external
