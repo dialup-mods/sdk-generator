@@ -8,6 +8,7 @@ auto WINAPI
 Worker(void*) -> DWORD {
     terminal::tryHookConsoleIO();
     {
+        printf("launching generator...\n");
         SDKGenerator generator;
         generator.run();
     }

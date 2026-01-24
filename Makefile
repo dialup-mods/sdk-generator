@@ -17,6 +17,10 @@ BANNER_DIRS := \
 
 .PHONY: configure build clean run configure-plugin build-plugin install-plugin
 
+ls-procs:
+	@DLL_NAME=$$(cat dll_filename).dll; \
+	tasklist //m $$DLL_NAME
+
 configure: check-shell
 	@echo "🛠️ Configuring CMake..."
 	$(call run_with_vcvars, \
@@ -39,6 +43,8 @@ run: check-shell
 	@bash -lc '\
 		if [ -f dll_filename ]; then \
 			rm "$(binary_dir)/$$(cat dll_filename).dll"; \
+		fi ; \
+		if [ -f dll_filename ]; then \
 			rm "$(binary_dir)/$$(cat dll_filename).pdb"; \
 		fi ; \
 		touch dll_filename ; \
@@ -52,13 +58,7 @@ run: check-shell
 	@bash -lc '\
 		until [[ ! -f "$(LOCK)" ]]; do \
 		  echo "Generating..."; \
-		  sleep 1; \
-		done \
-		'
-	@bash -lc '\
-		until [[ ! -f "$(LOCK)" ]]; do \
-		  echo "Generating..."; \
-		  sleep 1; \
+		  sleep 2; \
 		done \
 		'
 

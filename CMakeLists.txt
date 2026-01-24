@@ -87,9 +87,11 @@ set(INCLUDES
     ${DIALUP_INSTALL_DIR}/include/v1
     ${DIALUP_INSTALL_DIR}/include/external
 
+    ${CMAKE_SOURCE_DIR}/config/rocketleague
     ${GAME_CONFIG_DIR}
     ${ENGINE_RUNTIME_DIR}
 )
+message(${GAME_CONFIG_DIR})
 
 set(EXTERNAL_INCLUDES
     ${DIALUP_INSTALL_DIR}/include/external/fkYAML/include

@@ -37,6 +37,7 @@
 #include "UConst.h"
 #include "UEnum.h"
 #include "UScriptStruct.h"
+#include "MessageBox.h"
 
 using GroupedBase = std::unordered_map<std::string, std::vector<ObjectEntry*>>;
 namespace fs = std::filesystem;
@@ -74,6 +75,7 @@ public:
     }
 
     void run() {
+        messagebox::info("run");
         WaveWorker wave(std::chrono::milliseconds(50));
         wave.start();
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -85,8 +87,10 @@ public:
         std::this_thread::sleep_for(std::chrono::milliseconds(3000));
         Logger::instance().log("");
 
+        messagebox::info("config");
         Logger::instance().log("Loading config..");
         if (!ConfigManager::instance().load()) { return; }
+        messagebox::info("after config");
 
         if (!ensureDirectories()) { return; }
 
@@ -94,6 +98,7 @@ public:
 
         // open the log file for writing. before this point, logger just prints to console
         Logger::instance().open();
+        messagebox::info("after log");
 
         Logger::instance().log("Creating object store...");
         {
@@ -266,6 +271,7 @@ public:
     }
 
     auto generateSDK() -> bool {
+        messagebox::info("gen sdk");
         const auto schemaFile = fs::path(ConfigManager::instance().getGameConfigDir() / "Schema.h");
 
         times().tStart = BenchmarkTimes::mark();
@@ -368,9 +374,13 @@ public:
                 c->emitStaticClasses(file);
                 c->emitFindFunctionDef(file);
 
+                if (c->getFullName().find("Core.Object") != std::string::npos ) {
+                    SchemaLoader::instance().describe();
+                }
                 if (schemaClass) {
-                  schemaClass->emitInjectedMethodsText(file);
-                  schemaClass->hasProcessed = true;
+                    printf("emitting injected methods");
+                    schemaClass->emitInjectedMethodsText(file);
+                    schemaClass->hasProcessed = true;
                 }
 
                 c->emitMethods(file);

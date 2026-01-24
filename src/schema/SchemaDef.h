@@ -85,6 +85,7 @@ struct SchemaClass {
 
     void emitInjectedMethodsText(FILE* file) {
         if (!getInjectedMethodsText().empty()) {
+            printf("\n\n\nactually emitting injected methods: \n%s\n", getInjectedMethodsText().c_str());
             fmt::print(file, "\n    {}\n", getInjectedMethodsText().c_str());
         }
     }
