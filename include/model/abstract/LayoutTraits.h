@@ -5,12 +5,10 @@
 /// @tparam ThisType The derived class type
 /// @tparam BaseType The immediate base class type
 
-#include <cstdio>
-
 template <typename ThisType, typename BaseType>
 struct LayoutTraits {
-    static constexpr ptrdiff_t getClassSize() { return sizeof(ThisType); }
-    static constexpr ptrdiff_t offsetFrom() {
+    static constexpr auto getClassSize() -> ptrdiff_t { return sizeof(ThisType); }
+    static constexpr auto offsetFrom() -> ptrdiff_t {
         return sizeof(ThisType) - sizeof(BaseType);
     }
 };

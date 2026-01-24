@@ -3,7 +3,7 @@
 
 #include "fmt/format.h"
 
-#include "EClassTypes.h"
+#include "../EClassTypes.h"
 #include "Logger.h"
 #include "RuntimeGen.h"
 #include "Schema.h"

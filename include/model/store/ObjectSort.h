@@ -3,8 +3,8 @@
 
 #include "Logger.h"
 #include "ObjectStore.h"
-#include "UScriptStruct.h"
 #include "UClass.h"
+#include "UScriptStruct.h"
 
 #include <queue>
 
