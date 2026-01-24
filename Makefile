@@ -47,7 +47,8 @@ run: check-shell
 		cp -v "$(BUILD_DIR)/$(DLL)" "$(binary_dir)/$(DLL_RAND_NAME).pdb"; \
 		touch "$(LOCK)" \
 		'
-	"$(INJECTOR)" "$(target)" "$(binary_dir)/$(DLL_RAND_NAME).dll"
+	#"$(INJECTOR)" "$(target)" "$(binary_dir)/$(DLL_RAND_NAME).dll"
+	"$(INJECTOR)" "$(target)" "$(BUILD_DIR)/$(DLL).dll"
 	@bash -lc '\
 		until [[ ! -f "$(LOCK)" ]]; do \
 		  echo "Generating..."; \
@@ -62,6 +63,7 @@ run: check-shell
 		'
 
 ls-procs: check-shell
+	@DLL_NAME=$$(cat dll_filename).dll; \
 	powershell -Command "tasklist /m DialUp-SDKGen.dll"
 
 configure-plugin: check-shell
