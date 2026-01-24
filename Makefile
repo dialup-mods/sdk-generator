@@ -8,11 +8,14 @@ BUILD_DIR        := build
 DLL              := DialUp-SDKGen.dll
 SDK_OUTPUT_DIR   := plugin/generated
 
+LOCK             := $(DIALUP_ROOT)/.lock-sdkgen
+DLL_RAND_NAME    := $(shell shuf -i 8-16 -n 1 | xargs openssl rand -hex)
+
 BANNER_DIRS := \
 	plugin/imported/model \
 	plugin/imported/runtime
 
-.PHONY: configure build clean inject
+.PHONY: configure build clean run configure-plugin build-plugin install-plugin
 
 configure: check-shell
 	@echo "🛠️ Configuring CMake..."
@@ -25,17 +28,38 @@ configure: check-shell
 		"-DGAME_BINARY_PATH=$(binary_dir)"   \
 		$(ARGS))
 
-build:
+build: check-shell
 	$(call run_with_vcvars, cmake --build build --config RelWithDebInfo $(ARGS))
 
-clean:
+clean: check-shell
 	@rm -rf build
 
-inject: check-shell
+run: check-shell
 	# copy to RL bin dir, run, remove
-	@bash -lc 'cp -v "$(BUILD_DIR)/$(DLL)" "$(binary_dir)/$(DLL)"'
-	@powershell -NoLogo -NoProfile -Command "cmd /C 'call \"$(INJECTOR)\" \"${target}\" \"${DLL}\"'"
-	@bash -lc 'rm "$(binary_dir)/$(DLL)"'
+	@bash -lc '\
+		if [ -f dll_filename ]; then \
+			rm "$(binary_dir)/$$(cat dll_filename).dll"; \
+			rm "$(binary_dir)/$$(cat dll_filename).pdb"; \
+		fi ; \
+		touch dll_filename ; \
+		echo $(DLL_RAND_NAME) > dll_filename; \
+		cp -v "$(BUILD_DIR)/$(DLL)" "$(binary_dir)/$(DLL_RAND_NAME).dll"; \
+		cp -v "$(BUILD_DIR)/$(DLL)" "$(binary_dir)/$(DLL_RAND_NAME).pdb"; \
+		touch "$(LOCK)" \
+		'
+	"$(INJECTOR)" "$(target)" "$(binary_dir)/$(DLL_RAND_NAME).dll"
+	@bash -lc '\
+		until [[ ! -f "$(LOCK)" ]]; do \
+		  echo "Generating..."; \
+		  sleep 1; \
+		done \
+		'
+	@bash -lc '\
+		until [[ ! -f "$(LOCK)" ]]; do \
+		  echo "Generating..."; \
+		  sleep 1; \
+		done \
+		'
 
 ls-procs: check-shell
 	powershell -Command "tasklist /m DialUp-SDKGen.dll"
@@ -49,6 +73,6 @@ build-plugin: check-shell
 install-plugin: check-shell
 	$(call run_with_vcvars, cmake --install plugin/build --config RelWithDebInfo)
 
-clean: check-shell
+clean-plugin: check-shell
 	@rm -rf plugin/build
 	@rm -rf plugin/.build-artifacts

@@ -19,6 +19,8 @@
 #include <thread>
 #include <unordered_map>
 
+#include "../../include/model/store/ObjectFilter.h"
+#include "../../include/model/store/ObjectStore.h"
 #include "BenchmarkTimes.h"
 #include "ConfigManager.h"
 #include "Cowsay.h"
@@ -103,6 +105,9 @@ public:
             std::this_thread::sleep_for(std::chrono::milliseconds(900));
             Logger::instance().log("\nGoodbye.\n");
         }
+
+        auto lockFile = ConfigManager::instance().getLockFileDir() / ".lock-sdkgen";
+        fs::remove(lockFile);
     }
 
     auto isHeaderFile(const std::string& filename) -> bool {
@@ -267,6 +272,13 @@ public:
 
         Logger::instance().log("Parsing Schema.h...");
         SchemaLoader::instance().load(schemaFile.string());
+
+        //SchemaLoader::instance().describe();
+	//
+        for (const auto key : SchemaLoader::instance().getClasses() | std::views::keys) {
+            printf("\n\n schema class: %s\n", key.c_str());
+        }
+
         times().tSchema = BenchmarkTimes::mark();
 
         Logger::instance().log("Creating runtime...");
@@ -301,7 +313,7 @@ public:
                 }
                 const auto schemaStruct = SchemaLoader::instance().getStruct(s->getNameCPP());
                 if (schemaStruct && schemaStruct->isFinal) {
-                    //Logger::instance().log("skipping: {} (final)", s->getNameCPP());
+                    Logger::instance().log("skipping: {} (final)", s->getNameCPP());
                     return;
                 }
                 s->emit(f, package);

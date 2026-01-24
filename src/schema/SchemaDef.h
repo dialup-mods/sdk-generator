@@ -2,6 +2,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include "fmt/format.h"
 
 struct SchemaParameter {
     std::string type;

@@ -226,18 +226,27 @@ public:
                     .start = schemaClass.startOffset,
                     .end   = schemaClass.endOffset
                 });
+        // might be deleting shit we want
+        ////Logger::instance().log("finalize");
+        //for (const auto& schemaClass : instance().getClasses() | std::views::values) {
+        //    if (schemaClass.shouldDelete) {
+        //        // Delete the whole class block
+        //        rangesToDelete_.push_back({
+        //            .start = schemaClass.startOffset,
+        //            .end   = schemaClass.endOffset
+        //        });
 
-                // Delete inline methods associated with this class
-                for (const auto& method : schemaClass.getMethods() | std::views::values) {
-                    if (method.isInline) {
-                        rangesToDelete_.push_back({
-                            .start = method.startOffset,
-                            .end   = method.endOffset
-                        });
-                    }
-                }
-            }
-        }
+        //        // Delete inline methods associated with this class
+        //        for (const auto& method : schemaClass.getMethods() | std::views::values) {
+        //            if (method.isInline) {
+        //                rangesToDelete_.push_back({
+        //                    .start = method.startOffset,
+        //                    .end   = method.endOffset
+        //                });
+        //            }
+        //        }
+        //    }
+        //}
 
         std::string schemaContents = readFile();
 
