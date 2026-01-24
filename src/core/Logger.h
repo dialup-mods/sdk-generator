@@ -50,8 +50,8 @@ class Logger {
 
 public:
     static auto instance() -> Logger& {
-        static Logger inst;
-        return inst;
+        static Logger instance;
+        return instance;
     }
 
     Logger(Logger&&) = delete;
@@ -61,6 +61,7 @@ public:
 
     void open() {
         if (!handle_) {
+            printf("Log file: %s\n", ConfigManager::instance().getLogFile().string().c_str());
             handle_ = fopen(ConfigManager::instance().getLogFile().string().c_str(), "w"); // NOLINT
             if (!handle_) {
                 messagebox::error("Failed to create log file: " + ConfigManager::instance().getLogFile().string());

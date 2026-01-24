@@ -1,32 +1,82 @@
 #include <Windows.h>
 #include <Psapi.h>
-
 #include "Terminal.h"
 #include "SDKGenerator.h"
+#include "MessageBox.h"
 
-auto WINAPI
-Worker(void*) -> DWORD {
+uintptr_t gDllStart = 0;
+uintptr_t gDllEnd   = 0;
+
+void initDllBounds(HMODULE hModule) {
+    MODULEINFO info{};
+    GetModuleInformation(GetCurrentProcess(), hModule, &info, sizeof(info));
+    gDllStart = reinterpret_cast<uintptr_t>(info.lpBaseOfDll);
+    gDllEnd   = gDllStart + info.SizeOfImage;
+}
+static PVOID gVeh = nullptr;
+
+static LONG WINAPI crashShield(PEXCEPTION_POINTERS p) {
+    const auto addr = reinterpret_cast<uintptr_t>(p->ExceptionRecord->ExceptionAddress);
+
+    if (addr < gDllStart || addr > gDllEnd)
+        return EXCEPTION_CONTINUE_SEARCH;
+
+    if (p->ExceptionRecord->ExceptionCode != EXCEPTION_ACCESS_VIOLATION)
+        return EXCEPTION_CONTINUE_SEARCH;
+
+    OutputDebugStringA("[TEST DLL] caught access violation, bailing\n");
+
+    // Abort test execution cleanly
+    ExitThread(0);
+}
+
+void installCrashShield() {
+    gVeh = AddVectoredExceptionHandler(1, crashShield);
+}
+
+void removeCrashShield() {
+    if (gVeh) {
+        RemoveVectoredExceptionHandler(gVeh);
+        gVeh = nullptr;
+    }
+}
+
+DWORD WINAPI
+Worker(const LPVOID lpParam) {
+    Sleep(100);
+    //installCrashShield();
+
+    //terminal::tryFreeConsole();
     terminal::tryHookConsoleIO();
+
+    // Verify console is actually hooked
+    HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (h == INVALID_HANDLE_VALUE || h == nullptr) {
+        MessageBoxA(nullptr, "stdout handle is invalid after hook!", "ERROR", MB_OK);
+    } else {
+        DWORD written;
+        WriteConsoleA(h, "RAW CONSOLE TEST\n", 17, &written, nullptr);
+    }
+
+    // disable buffering
+    freopen("CONOUT$", "w", stdout);
+    setvbuf(stdout, nullptr, _IONBF, 0);
     {
-        printf("launching generator...\n");
+        printf("Generator started.\n");
         SDKGenerator generator;
         generator.run();
     }
+    //removeCrashShield();
 
-    auto handle = GetModuleHandle("DialUp-SDKGen.dll");
-
-    MODULEINFO modInfo{};
-    if (GetModuleInformation(GetCurrentProcess(), handle, &modInfo, sizeof(modInfo))) {
-        FlushInstructionCache(GetCurrentProcess(), modInfo.lpBaseOfDll, modInfo.SizeOfImage);
-    }
-
-    Sleep(200);
-    FreeLibraryAndExitThread(handle, 0);
+    Sleep(300);
+    FreeLibraryAndExitThread(static_cast<HMODULE>(lpParam), 0);
 }
 
 BOOL APIENTRY
 DllMain(const HMODULE hModule, const DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_ATTACH) {
+        initDllBounds(hModule);
+        MessageBoxA(nullptr, "DLL LOADED", "Debug", MB_OK);
         DisableThreadLibraryCalls(hModule);
         CreateThread(nullptr, 0, Worker, hModule, 0, nullptr);
     }

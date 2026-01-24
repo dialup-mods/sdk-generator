@@ -9,7 +9,7 @@ option(DEPLOY_TO_DEV "Copy plugin and PDB to dev plugins folder after build" OFF
 
 include("${DIALUP_INSTALL_DIR}/build-tools/GameBinaryDir.cmake")
 
-set(GAME "default" CACHE STRING "Name of the game config to compile with")
+set(GAME "rocketleague" CACHE STRING "Name of the game config to compile with")
 set(LOG_DIR "${CMAKE_SOURCE_DIR}/log" CACHE STRING "Directory to create the log file in")
 file(TO_CMAKE_PATH "${CMAKE_SOURCE_DIR}/config" CONFIG_DIR)
 
@@ -19,11 +19,12 @@ file(TO_CMAKE_PATH "${CMAKE_SOURCE_DIR}/plugin/generated" SDK_OUTPUT_DIR)
 file(TO_CMAKE_PATH "${CONFIG_DIR}/${GAME}" GAME_CONFIG_DIR)
 file(TO_CMAKE_PATH "${CMAKE_SOURCE_DIR}/include/runtime" ENGINE_RUNTIME_DIR)
 file(TO_CMAKE_PATH "${CMAKE_SOURCE_DIR}/include/model" UE_MODEL_DIR)
-file(TO_CMAKE_PATH "${CMAKE_SOURCE_DIR}" LOG_DIR)
+file(TO_CMAKE_PATH "${LOG_DIR}" LOG_DIR)
 file(TO_CMAKE_PATH "${DIALUP_INSTALL_DIR}" DIALUP_DIR)
 
 # output dirs
 set(GENERATED_DIRS
+    "${CMAKE_SOURCE_DIR}/config/rocketleague"
     "${CMAKE_SOURCE_DIR}/plugin/generated"
     "${CMAKE_SOURCE_DIR}/plugin/generated/impl"
     "${CMAKE_SOURCE_DIR}/plugin/generated/include"
@@ -61,7 +62,7 @@ set(CLANG_INCLUDE_DIR "$ENV{ProgramFiles}/LLVM/include")
 set(CLANG_LIBRARY "$ENV{ProgramFiles}/LLVM/lib/libclang.lib")
 
 set(SOURCES
-    "${GAME_CONFIG_DIR}/Schema.cpp"
+    ${GAME_CONFIG_DIR}/Schema.cpp
     ${ENGINE_RUNTIME_DIR}/Runtime.cpp
     ${CMAKE_SOURCE_DIR}/src/main.cpp
     ${CMAKE_SOURCE_DIR}/src/engine/RuntimeGen.cpp
@@ -105,6 +106,12 @@ target_include_directories(${PROJECT_NAME}
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE ${CLANG_LIBRARY})
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "$ENV{ProgramFiles}/LLVM/bin/libclang.dll"
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>
+    COMMENT "Copying libclang.dll to output directory"
+)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
     WINDOWS_EXPORT_ALL_SYMBOLS OFF

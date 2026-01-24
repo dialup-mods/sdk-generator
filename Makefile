@@ -51,15 +51,18 @@ run: check-shell
 		echo $(DLL_RAND_NAME) > dll_filename; \
 		cp -v "$(BUILD_DIR)/$(DLL)" "$(binary_dir)/$(DLL_RAND_NAME).dll"; \
 		cp -v "$(BUILD_DIR)/$(DLL)" "$(binary_dir)/$(DLL_RAND_NAME).pdb"; \
+		cp -v "$(BUILD_DIR)/$(DLL)" "$(binary_dir)/$(DLL)"; \
+		cp -v "$(BUILD_DIR)/libclang.dll" "$(binary_dir)/libclang.dll"; \
 		touch "$(LOCK)" \
 		'
-	#"$(INJECTOR)" "$(target)" "$(binary_dir)/$(DLL_RAND_NAME).dll"
-	"$(INJECTOR)" "$(target)" "$(BUILD_DIR)/$(DLL).dll"
+	"$(INJECTOR)" "$(target)" "$(binary_dir)/$(DLL_RAND_NAME).dll"
 	@bash -lc '\
+		echo -n "Generating..."; \
 		until [[ ! -f "$(LOCK)" ]]; do \
-		  echo "Generating..."; \
-		  sleep 2; \
-		done \
+		  echo -n "."; \
+		  sleep 1; \
+		done; \
+		echo ""; \
 		'
 
 ls-procs: check-shell

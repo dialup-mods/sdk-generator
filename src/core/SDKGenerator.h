@@ -19,17 +19,14 @@
 #include <thread>
 #include <unordered_map>
 
-#include "../../include/model/store/ObjectFilter.h"
-#include "../../include/model/store/ObjectStore.h"
+#include "ObjectFilter.h"
+#include "ObjectStore.h"
 #include "BenchmarkTimes.h"
 #include "ConfigManager.h"
 #include "Cowsay.h"
 #include "Logger.h"
-#include "ObjectFilter.h"
-#include "ObjectStore.h"
 #include "Runtime.h"
 #include "RuntimeGen.h"
-#include "SchemaLoader.h"
 #include "TypeRules.h"
 #include "WaveWorker.h"
 
@@ -38,6 +35,7 @@
 #include "UEnum.h"
 #include "UScriptStruct.h"
 #include "MessageBox.h"
+#include "SchemaLoader.h"
 
 using GroupedBase = std::unordered_map<std::string, std::vector<ObjectEntry*>>;
 namespace fs = std::filesystem;
@@ -48,34 +46,33 @@ public:
     ~SDKGenerator() = default;
 
     auto ensureDirectories() -> bool {
-        const std::vector<std::pair<std::string, fs::path>> dirs = {
-            //{ "combined include output", ConfigManager::instance().getCombinedIncludeDirAbs() },
-            { "sdk output",              ConfigManager::instance().getSDKOutputDir() },
-            { "headers",                 ConfigManager::instance().getHeaderDirAbs() },
-            { "implementations",         ConfigManager::instance().getImplementationDirAbs() },
-            { "meta",                    ConfigManager::instance().getMetaDirAbs() },
-        };
+    //    const std::vector<std::pair<std::string, fs::path>> dirs = {
+    //        //{ "combined include output", ConfigManager::instance().getCombinedIncludeDirAbs() },
+    //        { "sdk output",              ConfigManager::instance().getSDKOutputDir() },
+    //        { "headers",                 ConfigManager::instance().getHeaderDirAbs() },
+    //        { "implementations",         ConfigManager::instance().getImplementationDirAbs() },
+    //        { "meta",                    ConfigManager::instance().getMetaDirAbs() },
+    //    };
 
-        for (const auto& [name, path] : dirs) {
-            Logger::instance().log("  Output directories:");
-            Logger::instance().log("    {:<24}{}", name, path.string());
-            Logger::instance().log("");
-        }
+    //    for (const auto& [name, path] : dirs) {
+    //        Logger::instance().log("  Output directories:");
+    //        Logger::instance().log("    {:<24}{}", name, path.string());
+    //        Logger::instance().log("");
+    //    }
 
-        for (const auto& [name, path] : dirs) {
-            std::error_code ec;
-            fs::create_directories(path, ec);  // safe: creates parents too
+    //    for (const auto& [name, path] : dirs) {
+    //        std::error_code ec;
+    //        fs::create_directories(path, ec);  // safe: creates parents too
 
-            if (ec) {
-                Logger::instance().log("[ERROR] Failed to create {} directory '{}': {}", name, path.string(), ec.message());
-                return false;
-            }
-        }
+    //        if (ec) {
+    //            Logger::instance().log("[ERROR] Failed to create {} directory '{}': {}", name, path.string(), ec.message());
+    //            return false;
+    //        }
+    //    }
         return true;
     }
 
     void run() {
-        messagebox::info("run");
         WaveWorker wave(std::chrono::milliseconds(50));
         wave.start();
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -87,10 +84,9 @@ public:
         std::this_thread::sleep_for(std::chrono::milliseconds(3000));
         Logger::instance().log("");
 
-        messagebox::info("config");
         Logger::instance().log("Loading config..");
         if (!ConfigManager::instance().load()) { return; }
-        messagebox::info("after config");
+        Logger::instance().log("after config");
 
         if (!ensureDirectories()) { return; }
 
@@ -98,13 +94,12 @@ public:
 
         // open the log file for writing. before this point, logger just prints to console
         Logger::instance().open();
-        messagebox::info("after log");
 
         Logger::instance().log("Creating object store...");
         {
             TypeRules::instance().initialize();
             if (generateSDK()) {
-                printSummary();
+                //printSummary();
             }
 
             std::this_thread::sleep_for(std::chrono::milliseconds(900));
@@ -271,16 +266,16 @@ public:
     }
 
     auto generateSDK() -> bool {
-        messagebox::info("gen sdk");
+        printf("generatesdk\n");
         const auto schemaFile = fs::path(ConfigManager::instance().getGameConfigDir() / "Schema.h");
+        printf("after schema file\n");
 
         times().tStart = BenchmarkTimes::mark();
 
-        Logger::instance().log("Parsing Schema.h...");
-        SchemaLoader::instance().load(schemaFile.string());
+        Logger::instance().log("Parsing Schema file: {}", schemaFile.string().c_str());
+        SchemaLoader::instance().load();
+        printf("after schema load\n");
 
-        //SchemaLoader::instance().describe();
-	//
         for (const auto key : SchemaLoader::instance().getClasses() | std::views::keys) {
             printf("\n\n schema class: %s\n", key.c_str());
         }
@@ -357,37 +352,36 @@ public:
                     if (typeRules.isBlacklisted(method->getReturnType())) { return; }
                 }
 
-                const auto schemaClass = SchemaLoader::instance().getClass(c->getNameCPP());
-                if (schemaClass && schemaClass->isFinal) {
-		    Logger::instance().log("skipping: {} (final)", c->getNameCPP());
-                    return;
-                }
+                //const auto schemaClass = SchemaLoader::instance().getClass(c->getNameCPP());
+                //if (schemaClass && schemaClass->isFinal) {
+        	//    Logger::instance().log("skipping: {} (final)", c->getNameCPP());
+                //    return;
+                //}
 
-                if (schemaClass && schemaClass->isReplace) {
-                    Logger::instance().log("replacing: {}", c->getNameCPP());
-                    schemaClass->emitSource(file);
-                    return;
-                }
+                //if (schemaClass && schemaClass->isReplace) {
+                //    Logger::instance().log("replacing: {}", c->getNameCPP());
+                //    schemaClass->emitSource(file);
+                //    return;
+                //}
 
                 c->emitClassSignature(file);
                 c->emitProperties(file);
                 c->emitStaticClasses(file);
                 c->emitFindFunctionDef(file);
 
-                if (c->getFullName().find("Core.Object") != std::string::npos ) {
-                    SchemaLoader::instance().describe();
-                }
-                if (schemaClass) {
-                    printf("emitting injected methods");
-                    schemaClass->emitInjectedMethodsText(file);
-                    schemaClass->hasProcessed = true;
-                }
+                //if (c->getFullName().find("Core.Object") != std::string::npos ) {
+                //    SchemaLoader::instance().describe();
+                //}
+                //if (schemaClass) {
+                //    printf("emitting injected methods");
+                //    schemaClass->emitInjectedMethodsText(file);
+                //    schemaClass->hasProcessed = true;
+                //}
 
                 c->emitMethods(file);
-
                 c->emitClose(file);
-
-            });
+            }
+        );
 
         times().tHeaders = BenchmarkTimes::mark();
 
@@ -417,183 +411,185 @@ public:
             }
         );
 
-        times().tFunctions = BenchmarkTimes::mark();
+        //        times().tFunctions = BenchmarkTimes::mark();
+        //
+        //        emitGroupedEntries<UFunctionEntry>(
+        //            "parameters.h"
+        //            , headers
+        //            , []() { return object_filter::getBestFunctionEntriesByPackage(); }
+        //            , []() { return GroupedBase{}; }
+        //            , [](FILE* f, const UFunctionEntry* fn, const std::string& package) {
+        //                static const auto typeRules = TypeRules::instance();
+        //                for (auto param : fn->getAllParams()) {
+        //                    if (typeRules.isBlacklisted(param->getCanonicalType())) { return; }
+        //                }
+        //
+        //                for (auto param : fn->getArguments()) {
+        //                    if (typeRules.isBlacklisted(param->getCanonicalType())) { return; }
+        //                }
+        //
+        //                if (typeRules.isBlacklisted(fn->getReturnType())) { return; }
+        //
+        //                if (typeRules.isBlacklisted(fn->getNameCPP())) {
+        //                    return;
+        //                }
+        //
+        //                fn->emitFunctionParamsStruct(f);
+        //            }
+        //        );
+        //        times().tParameters = BenchmarkTimes::mark();
+        //
+        //        emitGroupedEntries<ConstEntry>(
+        //            "consts.h"
+        //            , headers
+        //            , []() { return object_filter::getConstEntriesByPackage(); }
+        //            , []() { return GroupedBase{}; }
+        //            , [](FILE* f, ConstEntry* c, const std::string& package) {
+        //                static const auto typeRules = TypeRules::instance();
+        //                if (typeRules.isBlacklisted(c->getNameCPP())) {
+        //                    return;
+        //                }
+        //                c->emit(f, package);
+        //            }
+        //        );
+        //        times().tConsts = BenchmarkTimes::mark();
+        //
+        //        emitGroupedEntries<EnumEntry>(
+        //            "enums.h"
+        //            , headers
+        //            , []() { return object_filter::getEnumsGroupedByPackage(); }
+        //            , []() { return GroupedBase{}; }
+        //            , [](FILE* f, EnumEntry* e, const std::string& package) {
+        //                static const auto typeRules = TypeRules::instance();
+        //                if (typeRules.isBlacklisted(e->getNameCPP())) {
+        //                    return;
+        //                }
+        //                e->emit(f, package);
+        //            }
+        //        );
+        //        times().tEnums = BenchmarkTimes::mark();
+        //
+        //        {   // combined include file
+        //            auto key = headerSortKey();
+        //            std::ranges::sort(headers, [&](const std::string& a, const std::string& b) {
+        //                return key(a) < key(b);
+        //            });
+        //
+        //            FILE* includesFile = fopen(ConfigManager::instance().getCombinedIncludeFilenameAbs().string().c_str(), "w"); // NOLINT
+        //	    Logger::instance().log( "includes file {}", ConfigManager::instance().getCombinedIncludeFilenameAbs().string().c_str());
+        //            fputs(cowsay::say("Fixed your 11-year inheritance bug").c_str(), includesFile);
+        //            fputs("\n#pragma once\n\n", includesFile);
+        //            fputs(ConfigManager::instance().getCombinedIncludeForwardDeclarations().c_str(), includesFile);
+        //            fputs("#include \"Flags.h\"\n", includesFile);
+        //            fputs("#include \"Schema.h\"\n\n", includesFile);
+        //            fputs("#include \"Runtime.h\"\n\n", includesFile);
+        //            for (const auto& h : headers) {
+        //                //fmt::print(includesFile, "#include \"{}/{}\"\n", ConfigManager::instance().getHeaderPathRel().string(), h.c_str());
+        //                fmt::print(includesFile, "#include \"{}\"\n", h.c_str());
+        //            }
+        //            fclose(includesFile);
+        //        }
+        //
+        //        if (!copyFiles()) {
+        //            Logger::instance().log("[ERROR] Failed to copy files");
+        //            return false;
+        //        }
+        //
+        //        SchemaLoader::instance().finalize();
+        //
+        //        times().tIncludes = BenchmarkTimes::mark();
+        //
+        //        Logger::instance().log(" Exporting GNames...");
+        //        RuntimeGen::dumpFNames();
+        //        Logger::instance().log(" Exporting GObjects...");
+        //        RuntimeGen::dumpUObjects();
+        //
+        //        times().tExportMaps = BenchmarkTimes::mark();
+        //
+        //        times().tEnd = BenchmarkTimes::mark();
+        //
+        //        return true;
+        //
+        //    }
 
-        emitGroupedEntries<UFunctionEntry>(
-            "parameters.h"
-            , headers
-            , []() { return object_filter::getBestFunctionEntriesByPackage(); }
-            , []() { return GroupedBase{}; }
-            , [](FILE* f, const UFunctionEntry* fn, const std::string& package) {
-                static const auto typeRules = TypeRules::instance();
-                for (auto param : fn->getAllParams()) {
-                    if (typeRules.isBlacklisted(param->getCanonicalType())) { return; }
-                }
+        //    auto copyFiles() const -> bool {
+        //        std::unordered_map<fs::path, fs::path> filesToMove;
+        //        filesToMove[ConfigManager::instance().getGameConfigDir() / "Flags.h"]     = ConfigManager::instance().getHeaderDirAbs();
+        //        filesToMove[ConfigManager::instance().getGameConfigDir() / "Schema.h"]    = ConfigManager::instance().getHeaderDirAbs();
+        //        filesToMove[ConfigManager::instance().getGameConfigDir() / "Schema.cpp"]  = ConfigManager::instance().getImplementationDirAbs();
+        //        filesToMove[ConfigManager::instance().getConfigEngineDir() / "Runtime.h"]   = ConfigManager::instance().getHeaderDirAbs();
+        //        filesToMove[ConfigManager::instance().getConfigEngineDir() / "Runtime.cpp"] = ConfigManager::instance().getImplementationDirAbs();
+        //
+        //        for (const auto& [fromFileAbs, toDir] : filesToMove) {
+        //            std::error_code ec;
+        //            auto toFileAbs = fs::path(toDir / fromFileAbs.filename());
+        //
+        //            std::ifstream inFileStream(fromFileAbs);
+        //            if (!inFileStream.is_open()) {
+        //                Logger::instance().log("[ERROR] Failed to open source file: {}", fromFileAbs.string());
+        //                return false;
+        //            }
+        //            std::string content((std::istreambuf_iterator(inFileStream)),
+        //                                std::istreambuf_iterator<char>());
+        //            inFileStream.close();
+        //
+        //            std::ofstream outFileStream(toFileAbs);
+        //            if (!outFileStream.is_open()) {
+        //                Logger::instance().log("[ERROR] Failed to create destination file: {}", toFileAbs.string());
+        //                return false;
+        //            }
+        //            fmt::print(outFileStream,
+        //                "// ============================================\n"
+        //                "// Auto-generated by DialUp SDK Generator\n"
+        //                "// DO NOT MODIFY - Changes will be overwritten\n"
+        //                "// ============================================\n\n"
+        //                "{}", content);
+        //            outFileStream.close();
+        //        }
+        //
+        //        return true;
+        //    }
 
-                for (auto param : fn->getArguments()) {
-                    if (typeRules.isBlacklisted(param->getCanonicalType())) { return; }
-                }
-
-                if (typeRules.isBlacklisted(fn->getReturnType())) { return; }
-
-                if (typeRules.isBlacklisted(fn->getNameCPP())) {
-                    return;
-                }
-
-                fn->emitFunctionParamsStruct(f);
-            }
-        );
-        times().tParameters = BenchmarkTimes::mark();
-
-        emitGroupedEntries<ConstEntry>(
-            "consts.h"
-            , headers
-            , []() { return object_filter::getConstEntriesByPackage(); }
-            , []() { return GroupedBase{}; }
-            , [](FILE* f, ConstEntry* c, const std::string& package) {
-                static const auto typeRules = TypeRules::instance();
-                if (typeRules.isBlacklisted(c->getNameCPP())) {
-                    return;
-                }
-                c->emit(f, package);
-            }
-        );
-        times().tConsts = BenchmarkTimes::mark();
-
-        emitGroupedEntries<EnumEntry>(
-            "enums.h"
-            , headers
-            , []() { return object_filter::getEnumsGroupedByPackage(); }
-            , []() { return GroupedBase{}; }
-            , [](FILE* f, EnumEntry* e, const std::string& package) {
-                static const auto typeRules = TypeRules::instance();
-                if (typeRules.isBlacklisted(e->getNameCPP())) {
-                    return;
-                }
-                e->emit(f, package);
-            }
-        );
-        times().tEnums = BenchmarkTimes::mark();
-
-        {   // combined include file
-            auto key = headerSortKey();
-            std::ranges::sort(headers, [&](const std::string& a, const std::string& b) {
-                return key(a) < key(b);
-            });
-
-            FILE* includesFile = fopen(ConfigManager::instance().getCombinedIncludeFilenameAbs().string().c_str(), "w"); // NOLINT
-	    Logger::instance().log( "includes file {}", ConfigManager::instance().getCombinedIncludeFilenameAbs().string().c_str());
-            fputs(cowsay::say("Fixed your 11-year inheritance bug").c_str(), includesFile);
-            fputs("\n#pragma once\n\n", includesFile);
-            fputs(ConfigManager::instance().getCombinedIncludeForwardDeclarations().c_str(), includesFile);
-            fputs("#include \"Flags.h\"\n", includesFile);
-            fputs("#include \"Schema.h\"\n\n", includesFile);
-            fputs("#include \"Runtime.h\"\n\n", includesFile);
-            for (const auto& h : headers) {
-                //fmt::print(includesFile, "#include \"{}/{}\"\n", ConfigManager::instance().getHeaderPathRel().string(), h.c_str());
-                fmt::print(includesFile, "#include \"{}\"\n", h.c_str());
-            }
-            fclose(includesFile);
-        }
-
-        if (!copyFiles()) {
-            Logger::instance().log("[ERROR] Failed to copy files");
-            return false;
-        }
-
-        SchemaLoader::instance().finalize();
-
-        times().tIncludes = BenchmarkTimes::mark();
-
-        Logger::instance().log(" Exporting GNames...");
-        RuntimeGen::dumpFNames();
-        Logger::instance().log(" Exporting GObjects...");
-        RuntimeGen::dumpUObjects();
-
-        times().tExportMaps = BenchmarkTimes::mark();
-
-        times().tEnd = BenchmarkTimes::mark();
-
+        //    void printSummary() const {
+        //        const auto totalSeen = ObjectStore::instance().getTotalSeenCount();
+        //        const auto totalGObjObjectCount = ObjectStore::instance().getTotalGObjObjectsCount();
+        //        const auto invalidCount = ObjectStore::instance().getInvalidCount();
+        //        const double percent = static_cast<double>(invalidCount) / totalSeen * 100.0; // NOLINT(*-narrowing-conversions)
+        //
+        //        Logger::instance().log("\nFile's done!\n");
+        //        Logger::instance().log("Summary:\n");
+        //        Logger::instance().log("  GObjObjects:       {}", totalGObjObjectCount);
+        //        Logger::instance().log("  Unique addresses:  {}", totalSeen);
+        //        Logger::instance().log("  Invalid UObjects:  {} ({:.2f}%)", invalidCount, percent);
+        //
+        //        if (invalidCount) {
+        //            Logger::instance().log("Invalid UObject Summary:");
+        //
+        //            std::unordered_map<InvalidUObjectReason, size_t> reasonCounts;
+        //            for (const auto& [reason, count] : reasonCounts) {
+        //                Logger::instance().log("  • {:<28} {:>5}", toString(reason), count);
+        //            }
+        //        }
+        //
+        //        Logger::instance().log("");
+        //        auto logTime = [&](const char* label, double seconds) {
+        //            Logger::instance().log("  {:<15}{:>7.3f}s", label, seconds);
+        //        };
+        //
+        //        logTime("Schema:",       BenchmarkTimes::delta(times().tStart,      times().tSchema));
+        //        logTime("Cache:",        BenchmarkTimes::delta(times().tSchema,      times().tCache));
+        //        logTime("Structs:",      BenchmarkTimes::delta(times().tCache,      times().tStructs));
+        //        logTime("Headers:",      BenchmarkTimes::delta(times().tStructs,    times().tHeaders));
+        //        logTime("Functions:",    BenchmarkTimes::delta(times().tHeaders,    times().tFunctions));
+        //        logTime("Parameters:",   BenchmarkTimes::delta(times().tFunctions,  times().tParameters));
+        //        logTime("Constants:",    BenchmarkTimes::delta(times().tParameters, times().tConsts));
+        //        logTime("Enums:",        BenchmarkTimes::delta(times().tConsts,     times().tEnums));
+        //        logTime("Includes:",     BenchmarkTimes::delta(times().tEnums,      times().tIncludes));
+        //        logTime("Obj/Name Dump:",BenchmarkTimes::delta(times().tIncludes,   times().tExportMaps));
+        //        Logger::instance().log("  =======================\r\b");
+        //        logTime("️Total:",    BenchmarkTimes::delta(times().tStart,      times().tEnd));
+        //    }
         return true;
-
-    }
-
-    auto copyFiles() const -> bool {
-        std::unordered_map<fs::path, fs::path> filesToMove;
-        filesToMove[ConfigManager::instance().getGameConfigDir() / "Flags.h"]     = ConfigManager::instance().getHeaderDirAbs();
-        filesToMove[ConfigManager::instance().getGameConfigDir() / "Schema.h"]    = ConfigManager::instance().getHeaderDirAbs();
-        filesToMove[ConfigManager::instance().getGameConfigDir() / "Schema.cpp"]  = ConfigManager::instance().getImplementationDirAbs();
-        filesToMove[ConfigManager::instance().getConfigEngineDir() / "Runtime.h"]   = ConfigManager::instance().getHeaderDirAbs();
-        filesToMove[ConfigManager::instance().getConfigEngineDir() / "Runtime.cpp"] = ConfigManager::instance().getImplementationDirAbs();
-
-        for (const auto& [fromFileAbs, toDir] : filesToMove) {
-            std::error_code ec;
-            auto toFileAbs = fs::path(toDir / fromFileAbs.filename());
-
-            std::ifstream inFileStream(fromFileAbs);
-            if (!inFileStream.is_open()) {
-                Logger::instance().log("[ERROR] Failed to open source file: {}", fromFileAbs.string());
-                return false;
-            }
-            std::string content((std::istreambuf_iterator(inFileStream)),
-                                std::istreambuf_iterator<char>());
-            inFileStream.close();
-
-            std::ofstream outFileStream(toFileAbs);
-            if (!outFileStream.is_open()) {
-                Logger::instance().log("[ERROR] Failed to create destination file: {}", toFileAbs.string());
-                return false;
-            }
-            fmt::print(outFileStream,
-                "// ============================================\n"
-                "// Auto-generated by DialUp SDK Generator\n"
-                "// DO NOT MODIFY - Changes will be overwritten\n"
-                "// ============================================\n\n"
-                "{}", content);
-            outFileStream.close();
-        }
-
-        return true;
-    }
-
-    void printSummary() const {
-        const auto totalSeen = ObjectStore::instance().getTotalSeenCount();
-        const auto totalGObjObjectCount = ObjectStore::instance().getTotalGObjObjectsCount();
-        const auto invalidCount = ObjectStore::instance().getInvalidCount();
-        const double percent = static_cast<double>(invalidCount) / totalSeen * 100.0; // NOLINT(*-narrowing-conversions)
-
-        Logger::instance().log("\nFile's done!\n");
-        Logger::instance().log("Summary:\n");
-        Logger::instance().log("  GObjObjects:       {}", totalGObjObjectCount);
-        Logger::instance().log("  Unique addresses:  {}", totalSeen);
-        Logger::instance().log("  Invalid UObjects:  {} ({:.2f}%)", invalidCount, percent);
-
-        if (invalidCount) {
-            Logger::instance().log("Invalid UObject Summary:");
-
-            std::unordered_map<InvalidUObjectReason, size_t> reasonCounts;
-            for (const auto& [reason, count] : reasonCounts) {
-                Logger::instance().log("  • {:<28} {:>5}", toString(reason), count);
-            }
-        }
-
-        Logger::instance().log("");
-        auto logTime = [&](const char* label, double seconds) {
-            Logger::instance().log("  {:<15}{:>7.3f}s", label, seconds);
-        };
-
-        logTime("Schema:",       BenchmarkTimes::delta(times().tStart,      times().tSchema));
-        logTime("Cache:",        BenchmarkTimes::delta(times().tSchema,      times().tCache));
-        logTime("Structs:",      BenchmarkTimes::delta(times().tCache,      times().tStructs));
-        logTime("Headers:",      BenchmarkTimes::delta(times().tStructs,    times().tHeaders));
-        logTime("Functions:",    BenchmarkTimes::delta(times().tHeaders,    times().tFunctions));
-        logTime("Parameters:",   BenchmarkTimes::delta(times().tFunctions,  times().tParameters));
-        logTime("Constants:",    BenchmarkTimes::delta(times().tParameters, times().tConsts));
-        logTime("Enums:",        BenchmarkTimes::delta(times().tConsts,     times().tEnums));
-        logTime("Includes:",     BenchmarkTimes::delta(times().tEnums,      times().tIncludes));
-        logTime("Obj/Name Dump:",BenchmarkTimes::delta(times().tIncludes,   times().tExportMaps));
-        Logger::instance().log("  =======================\r\b");
-        logTime("️Total:",    BenchmarkTimes::delta(times().tStart,      times().tEnd));
     }
 
   private:
