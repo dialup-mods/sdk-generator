@@ -19,6 +19,8 @@
 #include <thread>
 #include <unordered_set>
 
+#include "../../include/model/store/ObjectFilter.h"
+#include "../../include/model/store/ObjectStore.h"
 #include "BenchmarkTimes.h"
 #include "ConfigManager.h"
 #include "Cowsay.h"
@@ -109,6 +111,9 @@ class SDKGenerator {
             std::this_thread::sleep_for(std::chrono::milliseconds(900));
             getLogger()->log("\nGoodbye.\n");
         }
+
+        auto lockFile = ConfigManager::instance().getLockFileDir() / ".lock-sdkgen";
+        fs::remove(lockFile);
     }
 
     void yeet() const {
@@ -311,7 +316,13 @@ class SDKGenerator {
         getLogger()->log("Parsing Schema.h...");
         SchemaLoader::create();
         SchemaLoader::instance().load(schemaFile.string());
+<<<<<<< Updated upstream
         //SchemaLoader::instance().describe();
+=======
+        for (const auto key : SchemaLoader::instance().getClasses() | std::views::keys) {
+            printf("\n\n schema class: %s\n", key.c_str());
+        }
+>>>>>>> Stashed changes
         times().tSchema = BenchmarkTimes::mark();
 
         getLogger()->log("Populating Runtime...");
@@ -345,7 +356,11 @@ class SDKGenerator {
                 }
                 const auto schemaStruct = SchemaLoader::instance().getStruct(s->getNameCPP());
                 if (schemaStruct && schemaStruct->isFinal) {
+<<<<<<< Updated upstream
                     //getLogger()->log("skipping: {} (final)", s->getNameCPP());
+=======
+                    Logger::instance().log("skipping: {} (final)", s->getNameCPP());
+>>>>>>> Stashed changes
                     return;
                 }
                 s->emit(f, package);
