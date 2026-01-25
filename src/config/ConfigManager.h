@@ -258,6 +258,10 @@ public:
 
     // generation
 
+    auto insertDeprecatedStaticClassFunction() const -> bool {
+        return getNestedValue<bool>("generation.format.insertDeprecatedStaticClassFunction");
+    }
+
     auto getGameAlignment() const -> uint64_t {
         return getNestedValue<uint64_t>("generation.alignment.game");
     }

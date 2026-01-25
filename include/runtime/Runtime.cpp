@@ -1,51 +1,39 @@
 #include "Runtime.h"
 #include "SDK.h"
 #include "Schema.h"
+#include "StringUtil.h"
 
-TArray<FNameEntry*>* Runtime::fNameEntries_{nullptr};
-TArray<UObject*>* Runtime::uObjects_{nullptr};
-Runtime* Runtime::instance_{nullptr};
-std::map<std::string, UClass*> Runtime::classCache_{};
-std::map<std::string, UFunction*> Runtime::functionCache_{};
-std::vector<UObject*> Runtime::uObjectsCache_{};
+TArray<FNameEntry*>* r::fNameEntries_{nullptr};
+TArray<UObject*>* r::uObjects_{nullptr};
+Runtime* r::instance_{nullptr};
+std::map<std::string, UClass*> r::classCache_{};
+std::map<std::string, UFunction*> r::functionCache_{};
+std::vector<UObject*> r::uObjectsCache_{};
 
-SDK_API void Runtime::create() {
+std::unordered_map<int32_t, FName>        r::fname::cache_{};
+std::unordered_map<std::wstring, int32_t> r::fname::name_to_id_{};
+
+using tProcessEvent = void(__fastcall*)(UObject* self, UFunction* fn, void* params, void* result);
+using r = Runtime;
+
+SDK_API void r::create() {
     if (!instance_) instance_ = new Runtime();
 }
 
-SDK_API auto Runtime::instance() -> Runtime& {
+SDK_API auto r::instance() -> Runtime& {
     if (!instance_) {
         printf("[ERROR] No instance exists. Did you call `create()`?\n");
     }
     return *instance_;
 }
 
-SDK_API void Runtime::yeet() {
+SDK_API void r::yeet() {
     delete instance_;
     instance_ = nullptr;
 }
 
-SDK_API auto Runtime::getFNameEntries() -> TArray<FNameEntry*>& {
-    if (!fNameEntries_) {
-        // RuntimeGen::populate() or whatever module you built to load up runtime
-        printf("[ERROR] FNameEntries is null. Did you call `populate()`?\n");
-    }
-    return *fNameEntries_;
-}
 
-SDK_API auto Runtime::getFNameEntry(const int32_t index) -> FNameEntry* {
-    if (index < 0 || index >= getFNameEntries().size()) {
-        return nullptr;
-    }
-    return getFNameEntries()[index];
-}
-
-SDK_API auto Runtime::getFNameEntryName(const int32_t index) -> std::string {
-    const FNameEntry* entry = getFNameEntry(index);
-    return entry ? entry->ToString() : "";
-}
-
-SDK_API auto Runtime::findClass(const std::string& classFullName) -> UClass* {
+SDK_API auto r::uclass::find(const std::string& classFullName) -> UClass* {
     if (classCache_.empty()) {
         for (int32_t i = 0; i < uObjects_->size() - 1; i++) {
             if (UObject* uObject = uObjects_->at(i)) {
@@ -63,7 +51,7 @@ SDK_API auto Runtime::findClass(const std::string& classFullName) -> UClass* {
     return nullptr;
 }
 
-SDK_API auto Runtime::findFunction(const std::string& functionFullName) -> UFunction* {
+SDK_API auto r::ufunction::find(const std::string& functionFullName) -> UFunction* {
     if (functionCache_.empty()) {
         for (int32_t i = 0; i < uObjects_->size() - 1; i++) {
             if (UObject* uObject = uObjects_->at(i)) {
@@ -81,23 +69,21 @@ SDK_API auto Runtime::findFunction(const std::string& functionFullName) -> UFunc
     return nullptr;
 }
 
-using tProcessEvent = void(__fastcall*)(UObject* self, UFunction* fn, void* params, void* result);
-
-SDK_API void Runtime::callProcessEvent(UObject* self, UFunction* function, void* params, void* unusedResult) {
-    auto vtable = static_cast<void**>(findClass("Class Core.Object")->VfTableObject.Ptr);
+SDK_API void r::process_event::call(UObject* self, UFunction* function, void* params, void* unusedResult) {
+    auto vtable = static_cast<void**>(uclass::find("Class Core.Object")->VfTableObject.Ptr);
     auto processEvent = reinterpret_cast<tProcessEvent>(vtable[67]);
     processEvent(self, function, params, unusedResult);
 }
 
-SDK_API void Runtime::callProcessEvent(UObject* self, UFunction* function, void* params) {
-    callProcessEvent(self, function, params, nullptr);
+SDK_API void r::process_event::call(UObject* self, UFunction* function, void* params) {
+    call(self, function, params, nullptr);
 }
 
-SDK_API auto Runtime::findPackages() -> std::vector<UObject*> {
+SDK_API auto r::packages::find() -> std::vector<UObject*> {
     static std::vector<UObject*> packages;
     if (packages.empty()) {
         for (int i = 0; i < 10; ++i) {
-            if (UObject* obj = getUObjects().at(i); obj && !obj->GetName().empty()) {
+            if (UObject* obj = uobject::game_pool::ref().at(i); obj && !obj->GetName().empty()) {
                 packages.emplace_back(obj);
             }
         }
@@ -105,18 +91,19 @@ SDK_API auto Runtime::findPackages() -> std::vector<UObject*> {
     return packages;
 }
 
-SDK_API auto Runtime::areFNameEntriesValid() -> bool {
-    if (getFNameEntries().empty()) {
+// FName
+SDK_API auto r::fname::game_pool::isValid() -> bool {
+    if (ref().empty()) {
     	// fixme, return error string
         return false;
     }
 
-    if (getFNameEntries().at(0)->ToString() != "None") {
+    if (ref().at(0)->ToString() != "None") {
     	// fixme, return error string
         return false;
     }
 
-    if (getFNameEntries().size() < 1000) {
+    if (ref().size() < 1000) {
     	// fixme, return error string
         return false;
     }
@@ -124,8 +111,79 @@ SDK_API auto Runtime::areFNameEntriesValid() -> bool {
     return true;
 }
 
-SDK_API auto Runtime::areUObjectsPopulated() -> bool {
-    if (getUObjectsPtr()->empty()) {
+SDK_API auto r::fname::game_pool::find(const wchar_t* wanted)
+    -> std::optional<std::reference_wrapper<const FName>> {
+
+    // Fast path: check reverse map
+    if (auto it = name_to_id_.find(wanted); it != name_to_id_.end()) {
+        return find(it->second);  // Use ID lookup (already cached)
+    }
+
+    // Slow path: search FNameEntries
+    const auto& entries = ref();
+    for (int32_t i = 0; i < entries.size(); ++i) {
+        if (const auto& entry = entries[i]) {
+            if (std::wstring_view(entry->Name) == wanted) {
+                // Cache both directions
+                name_to_id_[wanted] = i;
+                auto [it, inserted] = cache_.try_emplace(i, FName{i, 0});
+                return std::cref(it->second);
+            }
+        }
+    }
+
+    return std::nullopt;
+}
+
+SDK_API auto r::fname::game_pool::find(int32_t id) -> std::optional<std::reference_wrapper<const FName>> {
+    const auto& entries = ref();
+    if (id < 0 || id >= entries.size()) {
+        return std::nullopt;
+    }
+
+    if (!entries[id]) {
+        return std::nullopt;
+    }
+
+    // Lazy-populate cache
+    auto [it, inserted] = cache_.try_emplace(id, FName{id, 0});
+    return std::cref(it->second);
+}
+
+SDK_API auto r::fname::unknown() -> const FName& {
+    static FName unknown = []() {
+        // shouldn't happen, but
+        // fallback to "None" if "Unknown" doesn't exist
+        return game_pool::find(L"Unknown").value_or(none());
+    }();
+    return unknown;
+}
+
+SDK_API auto r::fname::none() -> const FName& {
+    static FName none = []() {
+        return FName{ 0, 0 };
+    }();
+    return none;
+}
+
+SDK_API auto r::fname::game_pool::getWString(int32_t id) -> std::optional<std::wstring> {
+    const auto& entries = ref();
+    if (id >= 0 && id < entries.size() && entries[id]) {
+        return std::wstring(entries[id]->Name);
+    }
+    return std::nullopt;
+}
+
+SDK_API auto r::fname::game_pool::getString(int32_t id) -> std::optional<std::string> {
+    auto wstr = getWString(id);
+    if (wstr) {
+        return util::string::enshrinken(wstr.value());
+    }
+    return std::nullopt;
+}
+
+SDK_API auto r::uobject::game_pool::isPopulated() -> bool {
+    if (ptr()->empty()) {
         return false;
     }
     return true;

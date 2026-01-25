@@ -33,16 +33,16 @@ auto RuntimeGen::populate() -> bool {
                 return false;
             }
 
-            Runtime::setFNameEntries(reinterpret_cast<TArray<FNameEntry*>*>(fNameEntriesAddress));
-            logAddress("FNameEntries offset:", memory::getOffset(Runtime::getFNameEntriesPtr()));
+            Runtime::fname::game_pool::set(reinterpret_cast<TArray<FNameEntry*>*>(fNameEntriesAddress));
+            logAddress("FNameEntries offset:", memory::getOffset(Runtime::fname::game_pool::ptr()));
 
         } else if (fNameEntriesMethod == "offset") {
-            Runtime::setFNameEntries(reinterpret_cast<TArray<FNameEntry*>*>(baseAddress + ConfigManager::instance().getFNameEntriesOffset()));
-            logAddress("FNameEntries address:", reinterpret_cast<uintptr_t>(Runtime::getFNameEntriesPtr()));
-            logAddress("FNameEntries offset:", memory::getOffset(Runtime::getFNameEntriesPtr()));
+            Runtime::fname::game_pool::set(reinterpret_cast<TArray<FNameEntry*>*>(baseAddress + ConfigManager::instance().getFNameEntriesOffset()));
+            logAddress("FNameEntries address:", reinterpret_cast<uintptr_t>(Runtime::fname::game_pool::ptr()));
+            logAddress("FNameEntries offset:", memory::getOffset(Runtime::fname::game_pool::ptr()));
         }
 
-        if (Runtime::getFNameEntries().empty()) {
+        if (Runtime::fname::game_pool::ref().empty()) {
             Logger::instance().log("[ERROR] FNameEntries is null or empty");
             return false;
         }
@@ -60,8 +60,8 @@ auto RuntimeGen::populate() -> bool {
                 Logger::instance().log("[ERROR] Could not read memory at address.");
                 return false;
             }
-            Runtime::setUObjects(reinterpret_cast<TArray<UObject*>*>(uObjectsAddress));
-            logAddress("UObjects offset:", memory::getOffset(Runtime::getUObjectsPtr()));
+            Runtime::uobject::game_pool::set(reinterpret_cast<TArray<UObject*>*>(uObjectsAddress));
+            logAddress("UObjects offset:", memory::getOffset(Runtime::uobject::game_pool::ptr()));
 
         } else if (uObjectsMethod == "offset") {
             const uintptr_t uObjectsAddress = baseAddress + ConfigManager::instance().getUObjectsOffset();
@@ -69,9 +69,9 @@ auto RuntimeGen::populate() -> bool {
                 Logger::instance().log("[ERROR] Could not read memory at address.");
                 return false;
             }
-            Runtime::setUObjects(reinterpret_cast<TArray<UObject*>*>(baseAddress + ConfigManager::instance().getUObjectsOffset()));
-            logAddress("UObjects address:", reinterpret_cast<uintptr_t>(Runtime::getUObjectsPtr()));
-            logAddress("UObjects offset:", memory::getOffset(Runtime::getUObjectsPtr()));
+            Runtime::uobject::game_pool::set(reinterpret_cast<TArray<UObject*>*>(baseAddress + ConfigManager::instance().getUObjectsOffset()));
+            logAddress("UObjects address:", reinterpret_cast<uintptr_t>(Runtime::uobject::game_pool::ptr()));
+            logAddress("UObjects offset:", memory::getOffset(Runtime::uobject::game_pool::ptr()));
 
         } else if (uObjectsMethod == "pattern") {
             const uintptr_t gObjectAddress = memory::findPattern(ConfigManager::instance().getUObjectsPattern(), ConfigManager::instance().getUObjectsMask());
@@ -80,39 +80,39 @@ auto RuntimeGen::populate() -> bool {
                 Logger::instance().log("[ERROR] Could not read memory at address.");
                 return false;
             }
-            logAddress("UObjects address:", reinterpret_cast<uintptr_t>(Runtime::getUObjectsPtr()));
-            Runtime::setUObjects(reinterpret_cast<TArray<UObject*>*>(gObjectAddress));
-            logAddress("UObjects offset:", memory::getOffset(Runtime::getUObjectsPtr()));
+            logAddress("UObjects address:", reinterpret_cast<uintptr_t>(Runtime::uobject::game_pool::ptr()));
+            Runtime::uobject::game_pool::set(reinterpret_cast<TArray<UObject*>*>(gObjectAddress));
+            logAddress("UObjects offset:", memory::getOffset(Runtime::uobject::game_pool::ptr()));
         }
     }
 
     { // validate
-        if (!isProbablyValidTArray(*Runtime::getFNameEntriesPtr())) {
+        if (!isProbablyValidTArray(*Runtime::fname::game_pool::ptr())) {
             Logger::instance().log("FNameEntries is probably not a valid TArray.");
             return false;
         }
-        if (!Runtime::areFNameEntriesValid()) {
+        if (!Runtime::fname::game_pool::isValid()) {
             Logger::instance().log("FNameEntries are invalid.");
         }
 
-        if (!isProbablyValidTArray(*Runtime::getUObjectsPtr())) {
+        if (!isProbablyValidTArray(*Runtime::uobject::game_pool::ptr())) {
             Logger::instance().log("UObjects is probably not a valid TArray.");
             return false;
         }
-        if (!Runtime::areUObjectsPopulated()) {
+        if (!Runtime::uobject::game_pool::hasUObjects()) {
             Logger::instance().log("UObjects are invalid.");
             return false;
         }
     }
 
     { // cache
-        auto& globalObjects = *Runtime::getUObjectsPtr();
-        Runtime::getObjectCache().clear();
-        Runtime::getObjectCache().reserve(globalObjects.size());
+        auto& globalObjects = *Runtime::uobject::game_pool::ptr();
+        Runtime::uobject::cache::ref().clear();
+        Runtime::uobject::cache::ref().reserve(globalObjects.size());
 
         size_t count = 0;
         for (UObject* obj : globalObjects) {
-            Runtime::getObjectCache().push_back(obj);
+            Runtime::uobject::cache::ref().push_back(obj);
             ++count;
         }
     }
@@ -124,8 +124,8 @@ void RuntimeGen::dumpUObjects() {
     auto file = fopen(ConfigManager::instance().getObjectDumpFilepath().string().c_str(), "w"); // NOLINT
     if (!file) return;
 
-    for (int32_t i = 0; i < Runtime::getUObjects().size() - 1; ++i) {
-        if (UObject* uObject = Runtime::getUObjects().at(i)) {
+    for (int32_t i = 0; i < Runtime::uobject::game_pool::ref().size() - 1; ++i) {
+        if (UObject* uObject = Runtime::uobject::game_pool::ref().at(i)) {
             std::string name = uObject->GetFullName();
             if (!name.empty()) {
                 fmt::print(
@@ -145,7 +145,7 @@ void RuntimeGen::dumpFNames() {
     auto file = fopen(ConfigManager::instance().getFNameEntriesDumpFilepath().string().c_str(), "w"); // NOLINT
     if (!file) return;
 
-    for (const auto nameEntry : *Runtime::getFNameEntriesPtr()) {
+    for (const auto nameEntry : Runtime::fname::game_pool::ref()) {
         if (nameEntry) {
             std::string name = nameEntry->ToString();
             if (!name.empty()) {

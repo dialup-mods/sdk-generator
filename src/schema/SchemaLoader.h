@@ -1,19 +1,17 @@
 #pragma once
-
+#include <filesystem>
 #include <fstream>
-#include <sstream>
 #include <ranges>
 #include <string>
 #include <utility>
-#include <filesystem>
-
-namespace fs = std::filesystem;
 
 #include <clang-c/Index.h>
 #include "CLangWrapper.h"
 #include "SchemaDef.h"
 #include "Logger.h"
 #include "ConfigManager.h"
+
+namespace fs = std::filesystem;
 
 struct DeleteRange {
     size_t start;
@@ -42,16 +40,14 @@ public:
 
     // Read original schema from source directory (for processing)
     auto readFile() const -> std::string {
-//        auto filepath = ConfigManager::instance().getGameConfigSchemaFile();
         const auto filepath = fs::path(ConfigManager::instance().getGameConfigDir() / "Schema.h");
         auto filepathStr = filepath.string();
-        printf("\n\nfilepath_: %s\n", filepathStr.c_str());
         std::ifstream file(filepath);
         if (!file.is_open()) {
             Logger::instance().log("[ERROR] Failed to open file: {}", filepath.string());
             return "";
         }
-        std::string contents((std::istreambuf_iterator<char>(file)),
+        std::string contents((std::istreambuf_iterator(file)),
                      std::istreambuf_iterator<char>());
         file.close();
         return contents;
@@ -79,12 +75,9 @@ public:
     auto load() -> bool {
         auto filepath = ConfigManager::instance().getGameConfigSchemaFile();
         auto filepathStr = filepath.string();
-        printf("\n\nfilepath_: %s\n", filepathStr.c_str());
-        Logger::instance().log("load schema file: {}", filepathStr.c_str());
         // todo, validate
 
         auto schemaContents = readFile();
-        printf("schema contents: %s\n", schemaContents.c_str());
 
         // keep libclang loaded to prevent crash on unload
         // i'm tired, boss
@@ -100,7 +93,7 @@ public:
 
         auto index = clang_createIndex(0, 0);
         if (index == nullptr) {
-            printf("bad index\n\n");
+            Logger::instance().log("[ERROR] Could not create clang index");
             return false;
         }
 
@@ -113,7 +106,8 @@ public:
         );
 
         if (translationUnit == nullptr) {
-            printf("bad translation unit\n\n");
+            clang_disposeIndex(index);
+            Logger::instance().log("[ERROR] Could not create clang translation unit");
             return false;
         }
 
@@ -128,10 +122,7 @@ public:
             CXString fileName = clang_getFileName(file);
             std::string fileStr = clang_getCString(fileName);
             clang_disposeString(fileName);
-
-            if (fileStr.find("Schema.h") == std::string::npos) {
-                return CXChildVisit_Continue;
-            }
+            if (fileStr.find("Schema.h") == std::string::npos) { return CXChildVisit_Continue; }
 
             //Logger::instance().log("Cursor: {} ({})\n", c.spelling(), c.kindSpelling());
 
@@ -263,7 +254,7 @@ public:
         const char* args[] = {"-x", "c++", "-std=c++20"};
         auto index = clang_createIndex(0, 0);
         if (index == nullptr) {
-            printf("bad index\n\n");
+            Logger::instance().log("[ERROR] Could not create clang index");
             return std::nullopt;
         }
         const auto schemaFileStr = ConfigManager::instance().getGameConfigSchemaFile().string();
@@ -277,6 +268,7 @@ public:
 
         if (!tu) {
             clang_disposeIndex(index);
+            Logger::instance().log("[ERROR] Could not create clang translation unit");
             return std::nullopt;
         }
 

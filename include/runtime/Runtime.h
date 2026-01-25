@@ -1,5 +1,6 @@
 #pragma once
 #include <map>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -14,6 +15,7 @@ class UClass;
 class UFunction;
 class FNameEntry;
 class UObject;
+class FName;
 template<typename T> class TArray;
 
 class SDK_API Runtime {
@@ -34,49 +36,69 @@ public:
     static auto instance() -> Runtime&;
     static void yeet();
 
-    static void setUObjects(TArray<UObject*>* objs) { uObjects_ = objs; }
+    struct SDK_API uobject {
+        struct SDK_API game_pool {
+            static void set(TArray<UObject*>* objs) { uObjects_ = objs; }
+            static auto hasUObjects() -> bool { return uObjects_ != nullptr; }
+            static auto ptr() -> TArray<UObject*>* { return uObjects_; }
+            static auto ref() -> TArray<UObject*>& { return *uObjects_; }
+            static auto isPopulated() -> bool;
+        };
+        struct SDK_API cache {
+            static auto ref() -> std::vector<UObject*>& { return uObjectsCache_; }
+            static auto rawObjects() -> const std::vector<UObject*>& { return uObjectsCache_; }
+        };
+    };
 
-    static auto hasUObjects() -> bool { return uObjects_ != nullptr; }
-    static auto hasFNames() -> bool { return fNameEntries_ != nullptr; }
+    struct SDK_API fname {
+        static std::unordered_map<int32_t, FName> cache_;
+        static std::unordered_map<std::wstring, int32_t> name_to_id_;
 
-    static auto getUObjectsPtr() -> TArray<UObject*>* { return uObjects_; }
+        struct SDK_API game_pool {
+            static void set(TArray<FNameEntry*>* names) { fNameEntries_ = names; }
+            static auto ref() -> TArray<FNameEntry*>& { return *fNameEntries_; }
+            static auto ptr() -> TArray<FNameEntry*>* { return fNameEntries_; }
+            static auto isValid() -> bool;
+            static auto find(int32_t) -> std::optional<std::reference_wrapper<const FName>>;
+            static auto find(const wchar_t*) -> std::optional<std::reference_wrapper<const FName>>;
+            static auto getString(int32_t) -> std::optional<std::string>;
+            static auto getWString(int32_t) -> std::optional<std::wstring>;
+        };
 
-    // unsafe -- assumes initialized
-    static auto getUObjects() -> TArray<UObject*>& { return *uObjects_; }
+        struct SDK_API cache {
 
-    static auto findClass(const std::string& classFullName) -> UClass*;
-    static auto findFunction(const std::string& functionFullName) -> UFunction*;
+        };
 
-    static auto areFNameEntriesValid() -> bool;
-    static auto areUObjectsPopulated() -> bool;
+        static auto toWString(const FName&) -> std::optional<std::wstring>;
+        static auto unknown() -> const FName&;
+        static auto none() -> const FName&;
+        //static auto getBase(int32_t index) -> FNameEntry*;
+        //static auto getBaseStr(int32_t index) -> std::string;
+    };
 
-    static void setFNameEntries(TArray<FNameEntry*>* names) { fNameEntries_ = names; }
-    static auto getFNameEntries() -> TArray<FNameEntry*>&;
+    struct SDK_API ufunction {
+        struct SDK_API cache {
+            static auto ref() -> std::map<std::string, UFunction*>& { return functionCache_; }
+            static void add(const std::string& name, UFunction* fn) { functionCache_[name] = fn; }
+        };
+        static auto find(const std::string& functionFullName) -> UFunction*;
+    };
 
-    static auto getFNameEntriesPtr() -> TArray<FNameEntry*>* { return fNameEntries_; }
-    static auto getFNameEntry(int32_t index) -> FNameEntry*;
+    struct SDK_API uclass {
+        struct SDK_API cache {
+            static void set(std::map<std::string, UClass*>&& cache) { classCache_ = std::move(cache); }
+            static auto ref() -> std::map<std::string, UClass*>& { return classCache_; }
+            static void add(const std::string& name, UClass* cls) { classCache_[name] = cls; }
+        };
+        static auto find(const std::string& classFullName) -> UClass*;
+    };
 
-    static auto getFNameEntryName(int32_t index) -> std::string;
-    static void callProcessEvent(UObject* self, UFunction* function, void* params);
-    static void callProcessEvent(UObject* self, UFunction* function, void* params, void* unusedResult);
-    static auto findPackages() -> std::vector<UObject*>;
+    struct SDK_API process_event {
+        static void call(UObject* self, UFunction* function, void* params);
+        static void call(UObject* self, UFunction* function, void* params, void* unusedResult);
+    };
 
-    static auto getRawObjects() -> const std::vector<UObject*>& { return uObjectsCache_; }
-
-    static auto getObjectCache() -> std::vector<UObject*>& { return uObjectsCache_; }
-    static auto getFunctionCache() -> std::map<std::string, UFunction*>& { return functionCache_; }
-
-    static void setClassCache(const std::map<std::string, UClass*>& cache) { classCache_ = std::move(cache); }
-    static auto getClassCache() -> std::map<std::string, UClass*>& { return classCache_; }
-    static void addToClassCache(const std::string& name, UClass* cls) { classCache_[name] = cls; }
-    static void addToFunctionCache(const std::string& name, UFunction* fn) { functionCache_[name] = fn; }
+    struct SDK_API packages {
+        static auto find() -> std::vector<UObject*>;
+    };
 };
-
-//namespace sdk_internal {
-//template<typename T>
-//auto getVirtualFunction(const void* instance, const size_t index) -> T {
-//    return reinterpret_cast<T>(
-//        (*reinterpret_cast<void***>(const_cast<void*>(instance)))[index]
-//    );
-//}
-//}

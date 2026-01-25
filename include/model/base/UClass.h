@@ -20,12 +20,12 @@ public:
         iterateProperties();
     }
 
-    [[nodiscard]] auto getCanonicalType() const -> std::string override { return "class"; }
+    auto getCanonicalType() const -> std::string override { return "class"; }
 
-    [[nodiscard]] auto getCacheType() const -> std::string override { return "ClassEntry"; }
+    auto getCacheType() const -> std::string override { return "ClassEntry"; }
     auto getOffset() const -> ptrdiff_t { return hasSuperField() ? getSuperFieldPropertySize() : 0; }
 
-    [[nodiscard]] auto getSuperFieldAsClass() const -> UClass* {
+    auto getSuperFieldAsClass() const -> UClass* {
         return static_cast<UClass*>(asStruct()->SuperField);
     }
 
@@ -52,7 +52,7 @@ public:
         return nullptr;
     }
 
-    [[nodiscard]] auto getSuperFieldPropertySize() const -> ptrdiff_t {
+    auto getSuperFieldPropertySize() const -> ptrdiff_t {
         if (asClass()->SuperField) {
             if (const auto entry = ObjectStore::instance().add(asClass()->SuperField, getFullName())->as<StructLikeEntry>();
                 entry->isValid()) {
@@ -67,15 +67,15 @@ public:
         return uSuperClassSize;
     }
 
-    [[nodiscard]] auto getSuperFieldFullName() const -> std::string {
+    auto getSuperFieldFullName() const -> std::string {
         if (auto* superFieldEntry = ObjectStore::instance().add(asClass()->SuperField, getFullName())) {
             return superFieldEntry->getFullName();
         }
         return "";
     };
 
-    [[nodiscard]] auto getMinAlignment() const -> ptrdiff_t override { return asStruct() ? asStruct()->MinAlignment : 0; }
-    [[nodiscard]] auto getPropertySize() const -> ptrdiff_t override {
+    auto getMinAlignment() const -> ptrdiff_t override { return asStruct() ? asStruct()->MinAlignment : 0; }
+    auto getPropertySize() const -> ptrdiff_t override {
         return asStruct() ? asStruct()->PropertySize : 0;
     }
 
@@ -130,7 +130,7 @@ public:
         }
     }
 
-    [[nodiscard]] auto getSortedMethods() const -> std::vector<UFunctionEntry*> {
+    auto getSortedMethods() const -> std::vector<UFunctionEntry*> {
         std::vector out(methods_.begin(), methods_.end());
         std::ranges::sort(out, [](auto* a, auto* b) {
             return a->getName() < b->getName();
@@ -138,7 +138,7 @@ public:
         return out;
     }
 
-    [[nodiscard]] auto getMethodNames() const -> std::unordered_set<std::string> {
+    auto getMethodNames() const -> std::unordered_set<std::string> {
         std::unordered_set<std::string> out;
         for (const auto* fn : methods_) {
             out.insert(fn->getNameCPP());
@@ -178,6 +178,10 @@ public:
         fprintf(file, "  public:\n");
     }
 
+    void emitClassName(FILE* file) const {
+        fmt::print(file, "    static constexpr const char* className = \"{}\";\n", getFullName());
+    }
+
     void emitProperties(FILE* file) const {
         ptrdiff_t cursorPosition = getOffset();
         uint32_t unknownDataIndex = 0;
@@ -185,7 +189,13 @@ public:
         std::map<std::string, uint32_t> bitfieldMap;
         std::vector<std::string> outputLines;
 
-        for (PropertyEntry* prop : getSortedProperties()) {
+        const auto sortedProperties = getSortedProperties();
+
+        if (!sortedProperties.empty()) {
+            fputs("\n", file);
+        }
+
+        for (const PropertyEntry* prop : sortedProperties) {
             if (!prop->isValidProperty()) continue;
 
             auto propName = prop->getSanitizedName();
@@ -239,44 +249,43 @@ public:
         for (const auto& line : outputLines) {
             fputs(line.c_str(), file);
         }
-
-        if (!outputLines.empty()) {
-            fputs("\n", file);
-        }
     }
 
     void emitMethods(FILE* file) const {
-        if (!getSortedMethods().empty()) { fputs("\n", file); }
+        const auto sortedMethods = getSortedMethods();
+        if (!sortedMethods.empty()) { fputs("\n", file); }
 
-        for (UFunctionEntry* fn : getSortedMethods()) {
+        for (UFunctionEntry* fn : sortedMethods) {
             fn->emitClassMethods(file);
         }
     }
 
-    void emitFindFunctionDef(FILE* file) const {
-        if (asClass() == UObject::StaticClass()) {
-            if (ConfigManager::instance().getProcessEventMethod() == "vtable") {
-                fprintf(file, "    void ProcessEvent(UFunction* uFunction, void* uParams, void* uResult = nullptr);\n");
-            // fixme?
-            //} else if (GConfig::GetProcessEventIndex() != -1) {
-            //    //GenerateVirtualFunctions(file);
-            }
-            //fprintf(file
-            //    , "    static UFunction* SDK::findFunction(const std::string& %s);\n"
-            //    , getFullName().c_str()
-            //);
-        }
-    }
+    // fixme not needed methinks
+    //void emitFindFunctionDef(FILE* file) const {
+    //    if (asClass() == UObject::StaticClass()) {
+    //        if (ConfigManager::instance().getProcessEventMethod() == "vtable") {
+    //            fprintf(file, "    void ProcessEvent(UFunction* uFunction, void* uParams, void* uResult = nullptr);\n");
+    //        // fixme?
+    //        //} else if (GConfig::GetProcessEventIndex() != -1) {
+    //        //    //GenerateVirtualFunctions(file);
+    //        }
+    //        //fprintf(file
+    //        //    , "    static UFunction* SDK::findFunction(const std::string& %s);\n"
+    //        //    , getFullName().c_str()
+    //        //);
+    //    }
+    //}
 
     void emitStaticClasses(FILE* file) const {
-        fprintf(file, "    static UClass* StaticClass() { ");
+        fmt::print(file, "    [[deprecated(\"Use getUClass() - returns the UClass metadata for this type\")]]\n");
+        fputs("    static UClass* StaticClass() {\n", file);
         // fixme
         //if (GConfig::UsingConstants()) {
         //    fprintf(file, "return reinterpret_cast<UClass*>(UObject::GObjObjects()->at(%s));",
         //        GCache::GetConstant(unrealObj).first.c_str());
         //} else {
-            fprintf(file, "return Runtime::findClass(\"%s\");",
-                getFullName().c_str()
+            fmt::print(file, "return r::uclass::find(\"{}\");",
+                getFullName()
             );
         //}
         fputs("}\n", file);

@@ -83,7 +83,7 @@ ObjectStore::isProbablyValidUObject(UObject* rawObj) -> bool {
 
 auto
 ObjectStore::getTotalGObjObjectsCount() const -> size_t {
-    return Runtime::instance().getRawObjects().size();
+    return Runtime::uobject::cache::rawObjects().size();
 }
 
 auto
@@ -97,7 +97,7 @@ ObjectStore::getInvalidCount() const -> size_t {
 }
 
 void ObjectStore::iterateObjects(const std::function<bool(UObject*)>& fn) {
-    for (UObject* obj : Runtime::getUObjects()) {
+    for (UObject* obj : Runtime::uobject::game_pool::ref()) {
         if (!obj) continue;
         if (!fn(obj)) break;
     }

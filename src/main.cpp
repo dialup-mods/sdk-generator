@@ -44,9 +44,8 @@ void removeCrashShield() {
 DWORD WINAPI
 Worker(const LPVOID lpParam) {
     Sleep(100);
-    //installCrashShield();
+    installCrashShield();
 
-    //terminal::tryFreeConsole();
     terminal::tryHookConsoleIO();
 
     // Verify console is actually hooked
@@ -66,7 +65,7 @@ Worker(const LPVOID lpParam) {
         SDKGenerator generator;
         generator.run();
     }
-    //removeCrashShield();
+    removeCrashShield();
 
     Sleep(300);
     FreeLibraryAndExitThread(static_cast<HMODULE>(lpParam), 0);
@@ -76,7 +75,6 @@ BOOL APIENTRY
 DllMain(const HMODULE hModule, const DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_ATTACH) {
         initDllBounds(hModule);
-        MessageBoxA(nullptr, "DLL LOADED", "Debug", MB_OK);
         DisableThreadLibraryCalls(hModule);
         CreateThread(nullptr, 0, Worker, hModule, 0, nullptr);
     }

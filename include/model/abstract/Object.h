@@ -21,7 +21,7 @@ public:
 
     static auto UObjectClass() -> UClass* {
         static UClass* cached =
-            Runtime::findClass("Class Core.Object");
+            Runtime::uclass::find("Class Core.Object");
         return cached;
     }
 

@@ -253,17 +253,11 @@ public:
         // Repeat, you must NOT construct or assign the return value slot.
         // do not be tempted to add it here
 
-        if (isStaticFunction()) {
-            fmt::print(
-                file, "    r::callProcessEvent(StaticClass(), r::findFunction(\"{}\"), &params);\n"
-                , getFullName()
-            );
-        } else {
-            fmt::print(
-                file, "    r::callProcessEvent(this, r::findFunction(\"{}\"), &params);\n"
-                , getFullName()
-            );
-        }
+        fmt::print(file
+            , "    r::callProcessEvent({}\n        , r::findFunction(\"{}\")\n        , &params\n    );\n"
+            , isStaticFunction() ? "r::uclass::find(className)" : "this"
+            , getFullName()
+        );
 
         if (returnParam_.has_value()) { fmt::print(file, "    return {}.{};\n", paramVar, getReturnName()); }
 
