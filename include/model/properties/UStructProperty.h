@@ -18,30 +18,33 @@ class UStructPropertyEntry final
         return nullptr;
     }
 
-    [[nodiscard]] auto getEmitType(const std::string& currentPackage) const -> std::string& override {
+    auto getType() const -> EClassTypes override { return EClassTypes::UStructProperty; }
+    auto getCacheType() const -> std::string override { return "UStructPropertyEntry"; }
+    auto getDefaultClassName() const -> std::string override { return "UStructProperty"; }
+
+    auto getCanonicalType() const -> std::string override {
+        const auto* structProp = static_cast<UStructProperty*>(getObject());
+        return structProp->Struct->GetNameCPP();
+    }
+
+    auto getEmitType(const std::string& currentPackage) const -> std::string& override {
         const auto* structProperty = static_cast<UStructProperty*>(getObject());
         emitTypeStr_ = structProperty->Struct->GetNameCPP();
 
         //Logger::instance().log("current package: {}, getPackageName(): {}", currentPackage, getPackageName());
-        if (currentPackage != getPackageName()) {
-            // fixme, don't emit "class" or "struct" for known types
-            if (structProperty->Struct->IsA<UClass>()) {
-                emitTypeStr_.insert(0, "class ");
-            } else if (structProperty->Struct->IsA<UScriptStruct>()) {
-                emitTypeStr_.insert(0, "struct ");
-            }
-        }
+        // fixme, clean up the useless prefixes
+        //if (currentPackage != getPackageName()) {
+        //    //if (structProperty->Struct->IsA<UClass>()) {
+        //    //    emitTypeStr_.insert(0, "class ");
+        //    //} else if (structProperty->Struct->IsA<UScriptStruct>()) {
+        //    //    emitTypeStr_.insert(0, "struct ");
+        //    //}
+        //}
         return emitTypeStr_;
     }
 
-    [[nodiscard]] auto getCanonicalType() const -> std::string override {
-        const auto* structProp = static_cast<UStructProperty*>(getObject());
-        return structProp->Struct->GetNameCPP();
-    }
-    [[nodiscard]] auto getCacheType() const -> std::string override { return "UStructPropertyEntry"; }
-    [[nodiscard]] auto getDefaultClassName() const -> std::string override { return "UStructProperty"; }
-    [[nodiscard]] auto isTriviallyCopyable() const -> bool override { return isArray(); }
-    [[nodiscard]] auto canConst() const -> bool override { return false; }
+    auto isTriviallyCopyable() const -> bool override { return isArray(); }
+    auto canConst() const -> bool override { return false; }
 
     auto getStructEntryAsObjectEntry() const -> ObjectEntry* {
         if (!asStructProperty() || !asStructProperty()->Struct) {
@@ -51,7 +54,7 @@ class UStructPropertyEntry final
     }
 
     // fixme
-    [[nodiscard]] auto getStructDependencyTypes() const -> const std::unordered_set<std::string>& override {
+    auto getStructDependencyTypes() const -> const std::unordered_set<std::string>& override {
         if (const auto* structEntry = getStructEntryAsObjectEntry()) {
             dependencyTypes_.insert(structEntry->getFullName());
             return dependencyTypes_;

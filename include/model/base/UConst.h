@@ -10,11 +10,16 @@ class ConstEntry final : public ObjectEntry, LayoutTraits<UConst, UField> {
 public:
     using ObjectEntry::ObjectEntry;
 
-    [[nodiscard]] auto getCanonicalType() const -> std::string override { return "UConst"; }
-    [[nodiscard]] auto getCacheType() const -> std::string override { return "ConstEntry"; }
-    [[nodiscard]] auto getDefaultClassName() const -> std::string override { return "UConst"; }
+    static auto getBaseType() {
+        return EClassTypes::UConst;
+    }
 
-    [[nodiscard]] auto asConst() const -> UConst* {
+    auto getType() const -> EClassTypes override { return EClassTypes::UConst; }
+    auto getCanonicalType() const -> std::string override { return "UConst"; }
+    auto getCacheType() const -> std::string override { return "ConstEntry"; }
+    auto getDefaultClassName() const -> std::string override { return "UConst"; }
+
+    auto asConst() const -> UConst* {
         return static_cast<UConst*>(getObject());
     }
 

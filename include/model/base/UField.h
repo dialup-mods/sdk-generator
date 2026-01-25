@@ -8,7 +8,13 @@
 class UFieldEntry : public ObjectEntry, LayoutTraits<UField, UObject> {
 public:
     using ObjectEntry::ObjectEntry;
-    [[nodiscard]] auto getCanonicalType() const -> std::string override { return "UField"; }
-    [[nodiscard]] auto getCacheType() const -> std::string override { return "UFieldEntry"; }
-    [[nodiscard]] auto getDefaultClassName() const -> std::string override { return "UField"; }
+
+    static auto getBaseType() {
+        return EClassTypes::UField;
+    }
+
+    auto getType() const -> EClassTypes override { return EClassTypes::UField; }
+    auto getCanonicalType() const -> std::string override { return "UField"; }
+    auto getCacheType() const -> std::string override { return "UFieldEntry"; }
+    auto getDefaultClassName() const -> std::string override { return "UField"; }
 };

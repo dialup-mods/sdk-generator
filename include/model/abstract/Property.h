@@ -3,22 +3,25 @@
 
 #include "Object.h"
 #include "Schema.h"
+#include "Runtime.h"
+
+using r = Runtime;
 
 class PropertyEntry : public ObjectEntry {
 public:
     using ObjectEntry::ObjectEntry;
 
-    [[nodiscard]] auto asProperty() const -> UProperty* { return static_cast<UProperty*>(getObject()); }
+    auto asProperty() const -> UProperty* { return static_cast<UProperty*>(getObject()); }
 
-    [[nodiscard]] auto isArray() const -> bool { return getArrayDim() > 1; }
+    auto isArray() const -> bool { return getArrayDim() > 1; }
 
-    [[nodiscard]] virtual auto getSize() const -> ptrdiff_t { return asProperty()->ElementSize; }
+    virtual auto getSize() const -> ptrdiff_t { return asProperty()->ElementSize; }
 
-    [[nodiscard]] auto getArrayDim() const -> ptrdiff_t { return asProperty()->ArrayDim; }
-    [[nodiscard]] auto getElementSize() const -> ptrdiff_t { return asProperty()->ElementSize; }
-    [[nodiscard]] auto getOffset() const -> ptrdiff_t { return asProperty()->Offset; }
-    [[nodiscard]] auto getTotalSize() const -> ptrdiff_t { return getArrayDim() * getElementSize(); }
-    [[nodiscard]] auto getPropertyFlags() const -> uint64_t {
+    auto getArrayDim() const -> ptrdiff_t { return asProperty()->ArrayDim; }
+    auto getElementSize() const -> ptrdiff_t { return asProperty()->ElementSize; }
+    auto getOffset() const -> ptrdiff_t { return asProperty()->Offset; }
+    auto getTotalSize() const -> ptrdiff_t { return getArrayDim() * getElementSize(); }
+    auto getPropertyFlags() const -> uint64_t {
         if (!flags_) { flags_ = asProperty()->PropertyFlags; }
         return flags_;
     }
@@ -29,7 +32,7 @@ public:
             return false;
         }
 
-        if (!getObject()->IsA(UProperty::StaticClass())) {
+        if (!r::types::inheritsFrom(getObject(), r::uclass::find("Class Core.Property"))) {
             Logger::instance().log("[WARNING] Invalid property {}: not a UProperty", getName());
             return false;
         }
@@ -46,20 +49,6 @@ public:
 
         //Logger::instance().log("[INFO] Valid property: {} (type: {})", getName(), static_cast<int>(getType()));
         return true;
-    }
-
-    // Some real layout-affecting properties can have:
-    // ElementSize == 0
-    // bitfields
-    // bool-packed flags
-    // engine-internal padding props
-    // They still move offsets forward and therefore define memory, even if they don’t generate fields.
-    // So for inheritance eligibility, element size must NOT be a gate.
-    auto definesLayoutPast(ptrdiff_t parentSize) const -> bool {
-        if (!getObject()) return false;
-        if (!getObject()->IsA(UProperty::StaticClass())) return false;
-
-        return getOffset() >= parentSize;
     }
 
     auto isArgument() const -> bool override { return isValidProperty() && (getPropertyFlags() & CPF_Parm) && !(getPropertyFlags() & CPF_OutParm) && !(getPropertyFlags() & CPF_ReturnParm); }

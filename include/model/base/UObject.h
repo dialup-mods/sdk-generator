@@ -7,6 +7,12 @@
 class UObjectEntry final : public ObjectEntry, LayoutTraits<UObject, UObject> {
 public:
     using ObjectEntry::ObjectEntry;
+
+    static auto getBaseType() {
+        return EClassTypes::UObject;
+    }
+
+    auto getType() const -> EClassTypes override { return EClassTypes::UObject; }
     std::string getDefaultClassName() const override { return "UObject"; }
-    [[nodiscard]] auto getCacheType() const -> std::string override { return "UObjectEntry"; }
+    auto getCacheType() const -> std::string override { return "UObjectEntry"; }
 };

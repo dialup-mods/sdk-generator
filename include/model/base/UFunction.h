@@ -19,9 +19,14 @@ public:
         UFunctionEntry::iterateDependencies();
     }
 
-    [[nodiscard]] auto asFunction() const -> UFunction* {
+    auto asFunction() const -> UFunction* {
         return static_cast<UFunction*>(getObject());
     }
+
+    auto getType() const -> EClassTypes override { return EClassTypes::UFunction; }
+    auto getCanonicalType() const -> std::string override { return "UFunction"; }
+    auto getCacheType() const -> std::string override { return "UFunctionEntry"; }
+    auto getDefaultClassName() const -> std::string override { return "UFunction"; }
 
     void iterateDependencies() override {
         if (wasIterated()) return;
@@ -72,10 +77,6 @@ public:
         return "void";
     }
     auto getFunctionName() const -> std::string { return getSanitizedName(); }
-
-    auto getCanonicalType() const -> std::string override { return "UFunction"; }
-    auto getCacheType() const -> std::string override { return "UFunctionEntry"; }
-    auto getDefaultClassName() const -> std::string override { return "UFunction"; }
 
     auto getArguments() const -> std::vector<PropertyEntry*> { return arguments_; }
     auto getReturnParam() const -> std::optional<PropertyEntry*> { return returnParam_; }
@@ -204,13 +205,10 @@ public:
 
         UObject* outer = getObject()->Outer;
 
-        if (outer && outer->IsA<UState>()) {
-            UState* state = static_cast<UState*>(outer);
-
-            UObject* stateOuter = state->Outer;
-            if (stateOuter && stateOuter->IsA<UClass>()) {
-
-                if (state->GetName() != "Default") {
+        if (outer && r::types::conformsTo(outer, r::uclass::find("Class Core.State"))) {
+            UObject* stateOuter = outer->Outer;
+            if (stateOuter && r::types::conformsTo(stateOuter, r::uclass::find("Class Core.Class"))) {
+                if (stateOuter->GetName() != "Default") {
                     fmt::print(file, "// State-scoped UnrealScript function (no callable wrapper)\n\n");
                     return;
                 }

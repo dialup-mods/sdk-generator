@@ -8,6 +8,8 @@
 class UClassPropertyEntry final : public PropertyEntry, LayoutTraits<UClassProperty, UProperty> {
 public:
     using PropertyEntry::PropertyEntry;
+
+    auto getType() const -> EClassTypes override { return EClassTypes::UClassProperty; }
     auto getCanonicalType() const -> std::string override { return "UClass*"; }
     auto getCacheType() const -> std::string override { return "UClassPropertyEntry"; }
     auto getDefaultClassName() const -> std::string override { return "UClassProperty"; }

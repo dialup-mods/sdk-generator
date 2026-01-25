@@ -6,6 +6,7 @@
 #include "EClassTypes.h"
 #include "Logger.h"
 #include "RuntimeGen.h"
+#include "Runtime.h"
 #include "Schema.h"
 #include "TypeRules.h"
 #include "WaveWorker.h"
@@ -32,6 +33,8 @@
 #include "UQWordProperty.h"
 #include "UStrProperty.h"
 #include "UStructProperty.h"
+
+using r = Runtime;
 
 auto
 ObjectStore::isProbablyValidPtr(const uintptr_t ptr) -> bool {
@@ -163,10 +166,6 @@ auto ObjectStore::add(UObject* rawObj, const std::string& origin = "") -> Object
     }
 
     std::unique_ptr<ObjectEntry> entry;
-
-    //Logger::instance().log("class: " + rawObj->Class->GetFullName() + "\n  origin: " + origin);
-    //Logger::instance().log("UClass::StaticClass(): " + UClass::StaticClass()->GetName());
-    //Logger::instance().log("UScriptStruct::StaticClass(): " + UScriptStruct::StaticClass()->GetName());
     if (rawObj->IsA(UArrayProperty::StaticClass())) {
         entry = std::make_unique<UArrayPropertyEntry>(rawObj);
     } else if (rawObj->IsA(UStrProperty::StaticClass())) {
@@ -196,9 +195,11 @@ auto ObjectStore::add(UObject* rawObj, const std::string& origin = "") -> Object
     } else if (rawObj->IsA(UByteProperty::StaticClass())) {
         entry = std::make_unique<UBytePropertyEntry>(rawObj);
     } else if (rawObj->IsA(UEnum::StaticClass())) {
+        Logger::instance().log("enum");
         entry = std::make_unique<EnumEntry>(rawObj);
     } else if (rawObj->IsA(UClass::StaticClass())) {
         entry = std::make_unique<ClassEntry>(rawObj);
+        Logger::instance().log("class");
         nameToEntry_[rawObj->Name.ToString()] = entry.get();
     } else if (rawObj->IsA(UFunction::StaticClass())) {
         entry = std::make_unique<UFunctionEntry>(rawObj);
@@ -226,8 +227,75 @@ auto ObjectStore::add(UObject* rawObj, const std::string& origin = "") -> Object
         Logger::instance().log("[WARN] Using fallback type for: {}", entry->getFullName());
     }
 
+    //Logger::instance().log("class: " + rawObj->Class->GetFullName() + "\n  origin: " + origin);
+    //Logger::instance().log("UClass::StaticClass(): " + UClass::StaticClass()->GetName());
+    //Logger::instance().log("UScriptStruct::StaticClass(): " + UScriptStruct::StaticClass()->GetName());
+//    if (Runtime::types::inheritsFrom(rawObj, UByteProperty::StaticClass())) {
+//        entry = std::make_unique<UBytePropertyEntry>(rawObj);
+//    } else if (Runtime::types::inheritsFrom(rawObj, UIntProperty::StaticClass())) {
+//        entry = std::make_unique<UIntPropertyEntry>(rawObj);
+//    } else if (Runtime::types::inheritsFrom(rawObj, UBoolProperty::StaticClass())) {
+//        entry = std::make_unique<UBoolPropertyEntry>(rawObj);
+//    } else if (Runtime::types::inheritsFrom(rawObj, UFloatProperty::StaticClass())) {
+//        entry = std::make_unique<UFloatPropertyEntry>(rawObj);
+//    } else if (Runtime::types::inheritsFrom(rawObj, UNameProperty::StaticClass())) {
+//        entry = std::make_unique<UNamePropertyEntry>(rawObj);
+//    } else if (Runtime::types::inheritsFrom(rawObj, UStrProperty::StaticClass())) {
+//        entry = std::make_unique<UStrPropertyEntry>(rawObj);
+//    } else if (Runtime::types::inheritsFrom(rawObj, UQWordProperty::StaticClass())) {
+//        entry = std::make_unique<UQWordPropertyEntry>(rawObj);
+//    } else if (Runtime::types::inheritsFrom(rawObj, UArrayProperty::StaticClass())) {
+//        entry = std::make_unique<UArrayPropertyEntry>(rawObj);
+//    } else if (Runtime::types::inheritsFrom(rawObj, UMapProperty::StaticClass())) {
+//        entry = std::make_unique<UMapPropertyEntry>(rawObj);
+//    } else if (Runtime::types::inheritsFrom(rawObj, UClassProperty::StaticClass())) {
+//        entry = std::make_unique<UClassPropertyEntry>(rawObj);
+//    } else if (Runtime::types::inheritsFrom(rawObj, UDelegateProperty::StaticClass())) {
+//        entry = std::make_unique<UDelegatePropertyEntry>(rawObj);
+//    } else if (Runtime::types::inheritsFrom(rawObj, UStructProperty::StaticClass())) {
+//        entry = std::make_unique<UStructPropertyEntry>(rawObj);
+//    } else if (Runtime::types::inheritsFrom(rawObj, UClassProperty::StaticClass())) {
+//        entry = std::make_unique<UClassPropertyEntry>(rawObj);
+//    } else if (Runtime::types::inheritsFrom(rawObj, UObjectProperty::StaticClass())) {
+//        entry = std::make_unique<UObjectPropertyEntry>(rawObj);
+//    } else if (Runtime::types::inheritsFrom(rawObj, UInterfaceProperty::StaticClass())) {
+//        entry = std::make_unique<UInterfacePropertyEntry>(rawObj);
+//    } else if (Runtime::types::inheritsFrom(rawObj, UFunction::StaticClass())) {
+//        entry = std::make_unique<UFunctionEntry>(rawObj);
+//    } else if (Runtime::types::inheritsFrom(rawObj, UClass::StaticClass())) {
+//        entry = std::make_unique<ClassEntry>(rawObj);
+//        nameToEntry_[rawObj->Name.ToString()] = entry.get();
+//    } else if (Runtime::types::inheritsFrom(rawObj, UState::StaticClass())) {
+//        //Logger::instance().log("[WARN] UState. Not yet implemented. {}", entry->getFullName());
+//        // fixme unimplemented
+//        //entry = std::make_unique<StateEntry>(rawObj);
+//    } else if (Runtime::types::inheritsFrom(rawObj, UScriptStruct::StaticClass())) {
+//        entry = std::make_unique<UScriptStructEntry>(rawObj);
+//        // fixme getFullName is empty
+//        nameToStruct_[entry->getFullName()] = entry.get();
+
+//    } else if (Runtime::types::inheritsFrom(rawObj, UEnum::StaticClass())) {
+//        entry = std::make_unique<EnumEntry>(rawObj);
+//    } else if (Runtime::types::inheritsFrom(rawObj, UConst::StaticClass())) {
+//        entry = std::make_unique<ConstEntry>(rawObj);
+//        nameToStruct_[entry->getFullName()] = entry.get();
+        //    } else if (Runtime::types::inheritsFrom(rawObj, UStruct::StaticClass())) {
+        //        Logger::instance().log("[WARN] Raw UStruct.");
+        //        entry = std::make_unique<UStructEntry>(rawObj);
+        //        nameToStruct_[entry->getFullName()] = entry.get();
+        //
+        //    } else if (Runtime::types::inheritsFrom(rawObj, UObject::StaticClass())) {
+        //        Logger::instance().log("[WARN] Raw UStruct.");
+        //        entry = std::make_unique<UObjectEntry>(rawObj);
+        //    } else {
+        //        entry = std::make_unique<ObjectEntry>(rawObj);
+        //        // fixme getFullName will crash on invalid elements
+        //        Logger::instance().log("[WARN] Using fallback type for: {}", entry->getFullName());
+        //    }
+//    }
+//    Logger::instance().log("entry: {}", entry->asString());
+//
     entry->setOrigin(origin);
-    //Logger::instance().log("entry: " + entry->asString());
 
     if (!entry->isValid()) {
         // fixme getFullName will crash on invalid elements
@@ -262,6 +330,7 @@ auto ObjectStore::getAllStructEntries() -> std::vector<UScriptStructEntry*> {
         //    Logger::instance().log("[ERROR] skipping UStruct, {}", entry->getFullName());
         //}
     }
+    Logger::instance().log("returning {} struct entries", result.size());
     return result;
 }
 
@@ -272,6 +341,7 @@ auto ObjectStore::getAllEnumEntries() -> std::vector<EnumEntry*> {
             result.emplace_back(static_cast<EnumEntry*>(entry.get()));
         }
     }
+    Logger::instance().log("returning {} enum entries", result.size());
     return result;
 }
 
@@ -282,6 +352,7 @@ auto ObjectStore::getAllClassEntries() -> std::vector<ClassEntry*> {
             result.emplace_back(static_cast<ClassEntry*>(entry.get()));
         }
     }
+    Logger::instance().log("returning {} class entries", result.size());
     return result;
 }
 
@@ -292,6 +363,7 @@ auto ObjectStore::getAllConstEntries() -> std::vector<ConstEntry*> {
             result.emplace_back(static_cast<ConstEntry*>(entry.get()));
         }
     }
+    Logger::instance().log("returning {} const entries", result.size());
     return result;
 }
 
@@ -302,6 +374,7 @@ auto ObjectStore::getAllFunctionEntries() -> std::vector<UFunctionEntry*> {
             result.emplace_back(static_cast<UFunctionEntry*>(entry.get()));
         }
     }
+    Logger::instance().log("returning {} function entries", result.size());
     return result;
 }
 

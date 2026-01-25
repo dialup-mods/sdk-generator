@@ -8,7 +8,8 @@ class UObjectPropertyEntry : public PropertyEntry, LayoutTraits<UObjectProperty,
 public:
     using PropertyEntry::PropertyEntry;
 
-    [[nodiscard]] auto getEmitType(const std::string& currentPackage) const -> std::string& override {
+    auto getType() const -> EClassTypes override { return EClassTypes::UObjectProperty; }
+    auto getEmitType(const std::string& currentPackage) const -> std::string& override {
         emitTypeStr_ = "UObject*";
         const auto* objProperty = static_cast<UObjectProperty*>(getObject());
         if (!objProperty) { return emitTypeStr_; }
@@ -24,7 +25,7 @@ public:
         return emitTypeStr_;
     }
 
-    [[nodiscard]] auto getCanonicalType() const -> std::string override {
+    auto getCanonicalType() const -> std::string override {
         const auto* objProp = static_cast<UObjectProperty*>(getObject());
         if (!objProp || !objProp->PropertyClass) {
             return "UObject*"; // or fallback
@@ -33,10 +34,10 @@ public:
         return "class " + objProp->PropertyClass->GetNameCPP() + "*";
         //return objProp->PropertyClass->GetNameCPP() + "*";
     }
-    [[nodiscard]] auto getCacheType() const -> std::string override { return "UObjectPropertyEntry"; }
-    [[nodiscard]] auto getDefaultClassName() const -> std::string override { return "UObjectProperty"; }
-    [[nodiscard]] bool isTriviallyCopyable() const override { return false; }
-    [[nodiscard]] bool canConst() const override { return false; }
-    [[nodiscard]] auto getSize() const -> ptrdiff_t override { return sizeof(uintptr_t); }
-    [[nodiscard]] auto getStructDependencyTypes() const -> const std::unordered_set<std::string>& override { return EMPTY_STR_SET; }
+    auto getCacheType() const -> std::string override { return "UObjectPropertyEntry"; }
+    auto getDefaultClassName() const -> std::string override { return "UObjectProperty"; }
+    bool isTriviallyCopyable() const override { return false; }
+    bool canConst() const override { return false; }
+    auto getSize() const -> ptrdiff_t override { return sizeof(uintptr_t); }
+    auto getStructDependencyTypes() const -> const std::unordered_set<std::string>& override { return EMPTY_STR_SET; }
 };

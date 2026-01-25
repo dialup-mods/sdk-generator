@@ -11,6 +11,7 @@
 #include "Property.h"
 #include "StructLike.h"
 #include "StructWalker.h"
+#include "Runtime.h"
 
 class UScriptStructEntry : public StructLikeEntry, LayoutTraits<UStruct, UField> {
 public:
@@ -19,9 +20,10 @@ public:
         UScriptStructEntry::deps();
     }
 
-    [[nodiscard]] auto getCacheType() const -> std::string override { return "ScriptStructEntry"; }
-    [[nodiscard]] auto getCanonicalType() const -> std::string override { return "UScriptStruct"; }
-    [[nodiscard]] auto getDefaultClassName() const -> std::string override { return "UScriptStruct"; }
+    auto getType() const -> EClassTypes override { return EClassTypes::UScriptStruct; }
+    auto getCacheType() const -> std::string override { return "ScriptStructEntry"; }
+    auto getCanonicalType() const -> std::string override { return "UScriptStruct"; }
+    auto getDefaultClassName() const -> std::string override { return "UScriptStruct"; }
 
     void iterateDependencies() override {
         if (wasIterated()) return;
@@ -87,13 +89,13 @@ public:
         }
 
         for (UField* field = uStruct->Children; field; field = field->Next) {
-            if (field->IsA<UScriptStruct>()) {
+            if (Runtime::types::inheritsFrom(field, UScriptStruct::StaticClass())) {
                 auto* nestedStruct = static_cast<UScriptStruct*>(field);
                 ObjectStore::instance().add(nestedStruct, fullName);
                 continue;
             }
 
-            if (field->IsA<UProperty>()) {
+            if (Runtime::types::inheritsFrom(field, UProperty::StaticClass())) {
                 auto* uProperty = reinterpret_cast<UProperty*>(field);
                 if (uProperty->ElementSize > 0) {
                     if (auto* cached = ObjectStore::instance().add(uProperty, fullName)->as<PropertyEntry>()) {

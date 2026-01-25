@@ -9,11 +9,16 @@ class EnumEntry final : public ObjectEntry, LayoutTraits<UEnum, UField> {
 public:
     using ObjectEntry::ObjectEntry;
 
-    [[nodiscard]] auto getCacheType() const -> std::string override { return "EnumEntry"; }
-    [[nodiscard]] auto getCanonicalType() const -> std::string override { return "UEnum"; }
-    [[nodiscard]] auto getDefaultClassName() const -> std::string override { return "UEnum"; }
-    [[nodiscard]] auto asEnum() const -> UEnum* { return static_cast<UEnum*>(getObject()); }
-    [[nodiscard]] static auto prefixWithClass() -> bool {
+    static auto getBaseType() {
+        return EClassTypes::UEnum;
+    }
+
+    auto getType() const -> EClassTypes override { return EClassTypes::UEnum; }
+    auto getCacheType() const -> std::string override { return "EnumEntry"; }
+    auto getCanonicalType() const -> std::string override { return "UEnum"; }
+    auto getDefaultClassName() const -> std::string override { return "UEnum"; }
+    auto asEnum() const -> UEnum* { return static_cast<UEnum*>(getObject()); }
+    static auto prefixWithClass() -> bool {
         // thread-safe cache. not using threads currently (at time of writing anyway) but would be nice
         static bool cached = false;
         static std::once_flag flag;

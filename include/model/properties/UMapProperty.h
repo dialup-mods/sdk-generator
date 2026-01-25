@@ -9,7 +9,8 @@ class UMapPropertyEntry final : public PropertyEntry, LayoutTraits<UMapProperty,
 public:
     using PropertyEntry::PropertyEntry;
 
-    [[nodiscard]] auto getCanonicalType() const -> std::string override {
+    auto getType() const -> EClassTypes override { return EClassTypes::UMapProperty; }
+    auto getCanonicalType() const -> std::string override {
         const auto* mapProp = static_cast<UMapProperty*>(getObject());
 
         if (!mapProp || !mapProp->Key || !mapProp->Value) {
@@ -22,13 +23,13 @@ public:
         return "TMap<" + keyEntry->getCanonicalType() + ", " + valueEntry->getCanonicalType() + ">";
     }
 
-    [[nodiscard]] auto getCacheType() const -> std::string override { return "UMapPropertyEntry"; }
-    [[nodiscard]] auto getDefaultClassName() const -> std::string override { return "UMapProperty"; }
-    [[nodiscard]] auto isTriviallyCopyable() const -> bool override { return false; }
-    [[nodiscard]] auto canConst() const -> bool override { return false; }
+    auto getCacheType() const -> std::string override { return "UMapPropertyEntry"; }
+    auto getDefaultClassName() const -> std::string override { return "UMapProperty"; }
+    auto isTriviallyCopyable() const -> bool override { return false; }
+    auto canConst() const -> bool override { return false; }
     // fixme
 
-    [[nodiscard]] auto getStructDependencyTypes() const -> const std::unordered_set<std::string>& override {
+    auto getStructDependencyTypes() const -> const std::unordered_set<std::string>& override {
         const auto* rawProp = getObject();
         if (!rawProp) {
             return EMPTY_STR_SET;

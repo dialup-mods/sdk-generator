@@ -12,6 +12,9 @@
 #include "UFunction.h"
 #include "UStruct.h"
 #include "UStructProperty.h"
+#include "Runtime.h"
+
+using r = Runtime;
 
 class ClassEntry final : public StructLikeEntry {
 public:
@@ -20,9 +23,10 @@ public:
         iterateProperties();
     }
 
+    auto getType() const -> EClassTypes override { return EClassTypes::UClass; }
     auto getCanonicalType() const -> std::string override { return "class"; }
-
     auto getCacheType() const -> std::string override { return "ClassEntry"; }
+
     auto getOffset() const -> ptrdiff_t { return hasSuperField() ? getSuperFieldPropertySize() : 0; }
 
     auto getSuperFieldAsClass() const -> UClass* {
@@ -106,7 +110,7 @@ public:
         if (!uClass) return;
 
         for (UField* field = uClass->Children; field; field = field->Next) {
-            if (field->IsA<UProperty>()) {
+            if (r::types::inheritsFrom(field, r::uclass::find("Class Core.Property"))) {
                 if (auto* cached = ObjectStore::instance().add(field, getFullName())->as<PropertyEntry>()) {
                     if (cached->isValidProperty()) {
                         //Logger::instance().log("adding property {} to class {}", cached->getFullName(), getFullName());
@@ -116,7 +120,7 @@ public:
                 }
             }
 
-            if (field->IsA<UFunction>()) {
+            if (r::types::inheritsFrom(field, r::uclass::find("Class Core.Function"))) {
                 if (auto* cached = ObjectStore::instance().add(field, getFullName())->as<UFunctionEntry>()) {
                     //Logger::instance().log("adding method {} to class {}", cached->getFullName(), getFullName());
                     methods_.insert(cached);

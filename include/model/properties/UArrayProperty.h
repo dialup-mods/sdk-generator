@@ -11,6 +11,9 @@
 class UArrayPropertyEntry final : public PropertyEntry, LayoutTraits<UArrayProperty, UProperty> {
 public:
     using PropertyEntry::PropertyEntry;
+
+    auto getType() const -> EClassTypes override { return EClassTypes::UArrayProperty; }
+
     auto getCanonicalType() const -> std::string override {
         const auto* arrayProp = static_cast<UArrayProperty*>(getObject());
         if (!arrayProp || !arrayProp->Inner) {

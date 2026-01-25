@@ -21,9 +21,10 @@ public:
         //walkChildren(asStruct(), UStructEntry::getFullName());
     }
 
-    [[nodiscard]] auto getCacheType() const -> std::string override { return "StructEntry"; }
-    [[nodiscard]] auto getCanonicalType() const -> std::string override { return "UStruct"; }
-    [[nodiscard]] auto getDefaultClassName() const -> std::string override { return "UStruct"; }
+    auto getType() const -> EClassTypes override { return EClassTypes::UStruct; }
+    auto getCacheType() const -> std::string override { return "StructEntry"; }
+    auto getCanonicalType() const -> std::string override { return "UStruct"; }
+    auto getDefaultClassName() const -> std::string override { return "UStruct"; }
 
 //    auto getDependencyTypes() -> std::vector<std::string> override {
 //        const auto baseStructName = getResolvedBaseStructName();

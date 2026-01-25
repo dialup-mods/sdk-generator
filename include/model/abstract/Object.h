@@ -27,6 +27,43 @@ public:
         return cached;
     }
 
+    virtual auto getType() const -> EClassTypes {
+        if (type_ != EClassTypes::Unresolved) {
+            return type_;
+        }
+        return EClassTypes::Unresolved;
+    }
+
+    //if (getObject()->IsA<UByteProperty>())           type_ = EClassTypes::UByteProperty;
+    //else if (getObject()->IsA<UIntProperty>())       type_ = EClassTypes::UIntProperty;
+    //else if (getObject()->IsA<UBoolProperty>())      type_ = EClassTypes::UBoolProperty;
+    //else if (getObject()->IsA<UFloatProperty>())     type_ = EClassTypes::UFloatProperty;
+    //else if (getObject()->IsA<UNameProperty>())      type_ = EClassTypes::UNameProperty;
+    //else if (getObject()->IsA<UStrProperty>())       type_ = EClassTypes::UStrProperty;
+    //else if (getObject()->IsA<UQWordProperty>())     type_ = EClassTypes::UQWordProperty;
+    //else if (getObject()->IsA<UArrayProperty>())     type_ = EClassTypes::UArrayProperty;
+    //else if (getObject()->IsA<UMapProperty>())       type_ = EClassTypes::UMapProperty;
+    //else if (getObject()->IsA<UDelegateProperty>())  type_ = EClassTypes::UDelegateProperty;
+    //else if (getObject()->IsA<UStructProperty>())    type_ = EClassTypes::UStructProperty;
+    //else if (getObject()->IsA<UClassProperty>())     type_ = EClassTypes::UClassProperty;
+    //else if (getObject()->IsA<UObjectProperty>())    type_ = EClassTypes::UObjectProperty;
+    //else if (getObject()->IsA<UInterfaceProperty>()) type_ = EClassTypes::UInterfaceProperty;
+
+    //// Structs (most specific first)
+    //else if (getObject()->IsA<UFunction>())          type_ = EClassTypes::UFunction;
+    //else if (getObject()->IsA<UScriptStruct>())      type_ = EClassTypes::UScriptStruct;
+    //else if (getObject()->IsA<UClass>())             type_ = EClassTypes::UClass;
+    //else if (getObject()->IsA<UStruct>())            type_ = EClassTypes::UStruct;  // Must be after Function/ScriptStruct/Class
+
+    //// Other
+    //else if (getObject()->IsA<UEnum>())              type_ = EClassTypes::UEnum;
+    //else if (getObject()->IsA<UConst>())             type_ = EClassTypes::UConst;
+
+    //    else type_ = EClassTypes::Unknown;
+
+    //    return type_;
+    //}
+
     auto fullName() const -> std::string {
         std::string fullName = this->getName();
 
@@ -41,7 +78,7 @@ public:
     auto getNameCPP() -> std::string {
         std::string nameCPP;
 
-        if (strcmp(uObject_->className, "Class Core.Class") == 0) {
+        if (strcmp(uObject_->baseClassName, "Class Core.Class") == 0) {
             auto uClass = reinterpret_cast<UClass*>(this);
 
             while (uClass) {
@@ -64,7 +101,7 @@ public:
     }
 
     auto getClassNameCPP() const -> std::string {
-        if (UObject* outer = getObject()->Outer; outer && strcmp(outer->className, "Class Core.Class") == 0) {
+        if (UObject* outer = getObject()->Outer; outer && strcmp(outer->baseClassName, "Class Core.Class") == 0) {
             return outer->GetNameCPP();
         }
         return "";
@@ -209,7 +246,9 @@ public:
     // todo: invalidate cache if uObject_ isn't valid
     auto isValid() const -> bool {
         // ReSharper disable once CppDFAConstantConditions too dumb to understand cache
-        return getObject() && (getType() != EClassTypes::Unresolved);
+        // fixme
+        // proper validation && (getType() != EClassTypes::Unresolved);
+        return getObject();
     }
 
     // todo: invalidate cache if uObject_ isn't valid
@@ -241,38 +280,6 @@ public:
         return getObject()->Name.ToString();
     }
 
-    //auto getType() const -> EClassTypes {
-    //    if (type_ != EClassTypes::Unresolved) {
-    //        return type_;
-    //    }
-
-    //    if (getObject()->IsA<UByteProperty>())        type_ = EClassTypes::UByteProperty;
-    //    else if (getObject()->IsA<UBoolProperty>())   type_ = EClassTypes::UBoolProperty;
-    //    else if (getObject()->IsA<UIntProperty>())    type_ = EClassTypes::UIntProperty;
-    //    else if (getObject()->IsA<UFloatProperty>())  type_ = EClassTypes::UFloatProperty;
-    //    else if (getObject()->IsA<UStrProperty>())    type_ = EClassTypes::UStrProperty;
-    //    else if (getObject()->IsA<UNameProperty>())   type_ = EClassTypes::UNameProperty;
-    //    else if (getObject()->IsA<UQWordProperty>())  type_ = EClassTypes::UQWordProperty;
-
-    //    else if (getObject()->IsA<UObjectProperty>())    type_ = EClassTypes::UObjectProperty;
-    //    else if (getObject()->IsA<UClassProperty>())     type_ = EClassTypes::UClassProperty;
-    //    else if (getObject()->IsA<UInterfaceProperty>()) type_ = EClassTypes::UInterfaceProperty;
-    //    else if (getObject()->IsA<UStructProperty>())    type_ = EClassTypes::UStructProperty;
-    //    else if (getObject()->IsA<UArrayProperty>())     type_ = EClassTypes::UArrayProperty;
-    //    else if (getObject()->IsA<UMapProperty>())       type_ = EClassTypes::UMapProperty;
-    //    else if (getObject()->IsA<UDelegateProperty>())  type_ = EClassTypes::UDelegateProperty;
-
-    //    else if (getObject()->IsA<UFunction>())      type_ = EClassTypes::UFunction;
-    //    else if (getObject()->IsA<UConst>())         type_ = EClassTypes::UConst;
-    //    else if (getObject()->IsA<UEnum>())          type_ = EClassTypes::UEnum;
-    //    else if (getObject()->IsA<UScriptStruct>())  type_ = EClassTypes::UScriptStruct;
-    //    else if (getObject()->IsA<UClass>())         type_ = EClassTypes::UClass;
-    //    else if (getObject()->IsA<UStruct>())        type_ = EClassTypes::UStruct;
-
-    //    else type_ = EClassTypes::Unknown;
-
-    //    return type_;
-    //}
 
     auto hasChildren() const -> bool {
         auto* obj = getObject();
@@ -363,14 +370,15 @@ public:
             // fixme maybe getNameCPP ?
             const std::string& nameCopy = getName();
             sanitizedName_ = sanitizeStr(nameCopy);
-            if (ConfigManager::instance().getPlatform() == "Windows" && (getType() == EClassTypes::UFunction)) {
-                for (const std::string& unsafe : unsafeNames_) {
-                    if (sanitizedName_.find(unsafe) != std::string::npos) {
-                        sanitizedName_ += "W";
-                        break;
-                    }
-                }
-            }
+            // fixme ?
+            //if (ConfigManager::instance().getPlatform() == "Windows" && (getType() == EClassTypes::UFunction)) {
+            //    for (const std::string& unsafe : unsafeNames_) {
+            //        if (sanitizedName_.find(unsafe) != std::string::npos) {
+            //            sanitizedName_ += "W";
+            //            break;
+            //        }
+            //    }
+            //}
         }
         return sanitizedName_;
     }
