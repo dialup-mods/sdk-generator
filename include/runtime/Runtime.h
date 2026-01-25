@@ -18,6 +18,7 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #if defined(SDK_BUILD)
@@ -53,6 +54,8 @@ public:
     static auto instance() -> Runtime&;
     static void yeet();
 
+    static auto getName(UObject* obj) -> std::string;
+
     struct SDK_API uobject {
         struct SDK_API game_pool {
             static void set(TArray<UObject*>* objs) { uObjects_ = objs; }
@@ -81,6 +84,7 @@ public:
             static auto isValid() -> bool;
             static auto find(int32_t) -> std::optional<std::reference_wrapper<const FName>>;
             static auto find(const wchar_t*) -> std::optional<std::reference_wrapper<const FName>>;
+            static auto find(const FName& wanted) -> std::optional<std::reference_wrapper<const FName>>;
             static auto getString(int32_t) -> std::optional<std::string>;
             static auto getWString(int32_t) -> std::optional<std::wstring>;
         };
@@ -125,11 +129,19 @@ public:
     };
 
     struct SDK_API types {
-        static auto knowsClass();
-        static auto conformsTo(obj, ClassId::UClass);
-        static auto inheritsFrom(obj, ClassId::UClass);
-        //if (!knowsClass(className)) {
+        static auto isa(const UClass* given, const UClass* other) -> bool;
+        static auto knowsClass(const UObject* obj) -> bool;
+        static auto conformsTo(const UObject* obj, const UClass* targetClass) -> bool;
+        static auto inheritsFrom(const UObject* obj, const UClass* targetClass) -> bool;
+        // if (!knowsClass(className)) {
         //    DIALUP_ASSERT("Unknown class queried; treating as UObject");
         //}
+    };
+
+    struct SDK_API inheritance_cache {
+        // Map<ChildClass, Set<ParentClasses>>
+        static inline std::unordered_map<UClass*, std::unordered_set<UClass*>> cache_;
+
+        static auto inheritsFrom(UClass* child, UClass* parent) -> bool;
     };
 };

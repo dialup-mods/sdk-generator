@@ -277,7 +277,6 @@ public:
     //}
 
     void emitStaticClasses(FILE* file) const {
-        fmt::print(file, "    [[deprecated(\"Use getUClass() - returns the UClass metadata for this type\")]]\n");
         fputs("    static UClass* StaticClass() {\n", file);
         // fixme
         //if (GConfig::UsingConstants()) {

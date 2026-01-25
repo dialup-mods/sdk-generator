@@ -27,7 +27,6 @@ public:
         if (wasIterated()) return;
 
         for (UField* child = asFunction()->Children; child; child = child->Next) {
-
             auto* cached = ObjectStore::instance().add(child, getFullName())->as<PropertyEntry>();
             if (!cached) continue;
 
@@ -45,21 +44,20 @@ public:
         markIterated();
     }
 
-    [[nodiscard]] auto
-    getFunctionFlags() -> uint64_t {
+    auto getFunctionFlags() -> uint64_t {
         if (!flags_) { flags_ = asFunction()->FunctionFlags; }
         return flags_;
     }
 
-    [[nodiscard]] auto isEvent() -> bool { return (getFunctionFlags() & FUNC_Event) != 0; }
-    [[nodiscard]] auto isStaticFunction() -> bool { return (getFunctionFlags() & FUNC_Static); }
-    [[nodiscard]] auto getMethodName() -> std::string { return isEvent() ? "event" + getSanitizedName() : getSanitizedName(); }
-    [[nodiscard]] auto getReturnName() const -> std::string { return returnParam_ ? returnParam_.value()->getSanitizedName() : ""; }
-    [[nodiscard]] auto getReturnType() const -> std::string {
+    auto isEvent() -> bool { return (getFunctionFlags() & FUNC_Event) != 0; }
+    auto isStaticFunction() -> bool { return (getFunctionFlags() & FUNC_Static); }
+    auto getMethodName() -> std::string { return isEvent() ? "event" + getSanitizedName() : getSanitizedName(); }
+    auto getReturnName() const -> std::string { return returnParam_ ? returnParam_.value()->getSanitizedName() : ""; }
+    auto getReturnType() const -> std::string {
         auto typ = returnParam_ ? returnParam_.value()->getCanonicalType() : "void";
         return typ == "SearchStatusOwner" ? "ESearchStatusOwner" : typ;
     }
-    [[nodiscard]] auto getEmitType() const -> std::string {
+    auto getEmitType() const -> std::string {
         if (returnParam_) {
             if (returnParam_.value()->getEmitType() != "<unknown>") {
                 // fixme stupid hack, thanks psyonix
@@ -73,16 +71,16 @@ public:
         }
         return "void";
     }
-    [[nodiscard]] auto getFunctionName() const -> std::string { return getSanitizedName(); }
+    auto getFunctionName() const -> std::string { return getSanitizedName(); }
 
-    [[nodiscard]] auto getCanonicalType() const -> std::string override { return "UFunction"; }
-    [[nodiscard]] auto getCacheType() const -> std::string override { return "UFunctionEntry"; }
-    [[nodiscard]] auto getDefaultClassName() const -> std::string override { return "UFunction"; }
+    auto getCanonicalType() const -> std::string override { return "UFunction"; }
+    auto getCacheType() const -> std::string override { return "UFunctionEntry"; }
+    auto getDefaultClassName() const -> std::string override { return "UFunction"; }
 
-    [[nodiscard]] auto getArguments() const -> std::vector<PropertyEntry*> { return arguments_; }
-    [[nodiscard]] auto getReturnParam() const -> std::optional<PropertyEntry*> { return returnParam_; }
-    [[nodiscard]] auto getOutParams() const -> std::vector<PropertyEntry*> { return outParams_; }
-    [[nodiscard]] auto getAllParams() const -> std::vector<PropertyEntry*> {
+    auto getArguments() const -> std::vector<PropertyEntry*> { return arguments_; }
+    auto getReturnParam() const -> std::optional<PropertyEntry*> { return returnParam_; }
+    auto getOutParams() const -> std::vector<PropertyEntry*> { return outParams_; }
+    auto getAllParams() const -> std::vector<PropertyEntry*> {
         // fixme sort by offset, if not already
         // std::sort(parms.begin(), parms.end(),
         // [](FProperty* a, FProperty* b)

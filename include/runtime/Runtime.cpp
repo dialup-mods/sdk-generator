@@ -32,6 +32,10 @@ SDK_API void r::yeet() {
     instance_ = nullptr;
 }
 
+SDK_API auto r::getName(UObject* obj) -> std::string{
+    return obj->Name.ToString();
+}
+
 // TODO:
 // get UObject cache when not in a match
 // possibly do the searching in background / next tick queue
@@ -175,7 +179,7 @@ SDK_API auto r::packages::findAll() -> std::vector<UObject*> {
     static std::vector<UObject*> packages;
     if (packages.empty()) {
         for (int i = 0; i < 10; ++i) {
-            if (UObject* obj = uobject::game_pool::ref().at(i); obj && !obj->GetName().empty()) {
+            if (UObject* obj = uobject::game_pool::ref().at(i); obj && !r::fname::game_pool::find(obj->Name)) {
                 packages.emplace_back(obj);
             }
         }
@@ -225,6 +229,11 @@ SDK_API auto r::fname::game_pool::find(const wchar_t* wanted)
     }
 
     return std::nullopt;
+}
+
+SDK_API auto r::fname::game_pool::find(const FName& wanted) -> std::optional<std::reference_wrapper<const FName>> {
+    const auto id = wanted.FNameEntryId;
+    return find(id);
 }
 
 SDK_API auto r::fname::game_pool::find(int32_t id) -> std::optional<std::reference_wrapper<const FName>> {
@@ -284,3 +293,49 @@ SDK_API auto r::uobject::game_pool::isPopulated() -> bool {
 //SDK_API auto r::uobject::wrap(UObject* gameObj) -> ObjectEntry {
 //    return ObjectEntry;
 //}
+
+
+SDK_API auto r::types::isa(const UClass* given, const UClass* other) -> bool {
+    if (!given || !other) { return false; }
+    // Walk up the inheritance chain of 'given'
+    for (const UClass* iClass = given;
+      iClass;
+      iClass = reinterpret_cast<UClass*>(iClass->SuperField)) {
+        if (iClass == other) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Does this object have a valid Class pointer?
+SDK_API auto r::types::knowsClass(const UObject* obj) -> bool {
+    return obj && obj->Class != nullptr;
+}
+
+// Is this object's type exactly this class? (no inheritance check)
+SDK_API auto r::types::conformsTo(const UObject* obj, const UClass* targetClass) -> bool {
+    return obj && obj->Class == targetClass;
+}
+
+// Does this object inherit from this class? (walks inheritance)
+SDK_API auto r::types::inheritsFrom(const UObject* obj, const UClass* targetClass) -> bool {
+    if (!obj || !targetClass) return false;
+    return isa(obj->Class, targetClass);
+}
+
+SDK_API auto r::inheritance_cache::inheritsFrom(UClass* child, UClass* parent) -> bool {
+    // Check cache first
+    if (auto it = cache_.find(child); it != cache_.end()) {
+        return it->second.contains(parent);
+    }
+
+    // Not cached - walk and populate
+    std::unordered_set<UClass*> parents;
+    for (auto cls = child; cls; cls = static_cast<UClass*>(cls->SuperField)) {
+        parents.insert(cls);
+    }
+
+    cache_[child] = std::move(parents);
+    return parents.contains(parent);
+}

@@ -9,6 +9,7 @@
 #include "EClassTypes.h"
 #include "Schema.h"
 #include "TypeRules.h"
+#include "Runtime.h"
 
 using obj_pool = Runtime::uobject::game_pool;
 
@@ -37,10 +38,6 @@ public:
         return fullName;
     }
 
-    auto getName() const -> std::string {
-        return uObject_->Name.ToString();
-    }
-
     auto getNameCPP() -> std::string {
         std::string nameCPP;
 
@@ -67,7 +64,7 @@ public:
     }
 
     auto getClassNameCPP() const -> std::string {
-        if (UObject* outer = getObject()->Outer; outer && outer->IsA(UClass::StaticClass())) {
+        if (UObject* outer = getObject()->Outer; outer && strcmp(outer->className, "Class Core.Class") == 0) {
             return outer->GetNameCPP();
         }
         return "";
@@ -75,11 +72,11 @@ public:
 
     inline static const std::unordered_set<std::string> EMPTY_STR_SET;
 
-    auto hasAnyFlags(EObjectFlags Flags) const -> bool {
+    auto hasAnyFlags(const EObjectFlags Flags) const -> bool {
         return (uObject_->ObjectFlags & Flags) != 0;
     }
 
-    auto hasAllFlags(EObjectFlags Flags) const -> bool {
+    auto hasAllFlags(const EObjectFlags Flags) const -> bool {
         return (uObject_->ObjectFlags & Flags) == Flags;
     }
 
@@ -96,8 +93,8 @@ public:
 
     void markIterated() { iterated_ = true; }
     void markChildrenIterated() { childrenIterated_ = true; }
-    [[nodiscard]] virtual auto wasIterated() const -> bool { return iterated_; }
-    [[nodiscard]] virtual auto wereChildrenIterated() const -> bool { return childrenIterated_; }
+    virtual auto wasIterated() const -> bool { return iterated_; }
+    virtual auto wereChildrenIterated() const -> bool { return childrenIterated_; }
 
     virtual auto isOptional()          const -> bool { return false; }
     virtual auto isOutParam()          const -> bool { return false; }
@@ -244,43 +241,43 @@ public:
         return getObject()->Name.ToString();
     }
 
-    auto
-    getType() const -> EClassTypes {
-        if (type_ != EClassTypes::Unresolved) {
-            return type_;
-        }
+    //auto getType() const -> EClassTypes {
+    //    if (type_ != EClassTypes::Unresolved) {
+    //        return type_;
+    //    }
 
-        if (getObject()->IsA<UByteProperty>())        type_ = EClassTypes::UByteProperty;
-        else if (getObject()->IsA<UBoolProperty>())   type_ = EClassTypes::UBoolProperty;
-        else if (getObject()->IsA<UIntProperty>())    type_ = EClassTypes::UIntProperty;
-        else if (getObject()->IsA<UFloatProperty>())  type_ = EClassTypes::UFloatProperty;
-        else if (getObject()->IsA<UStrProperty>())    type_ = EClassTypes::UStrProperty;
-        else if (getObject()->IsA<UNameProperty>())   type_ = EClassTypes::UNameProperty;
-        else if (getObject()->IsA<UQWordProperty>())  type_ = EClassTypes::UQWordProperty;
+    //    if (getObject()->IsA<UByteProperty>())        type_ = EClassTypes::UByteProperty;
+    //    else if (getObject()->IsA<UBoolProperty>())   type_ = EClassTypes::UBoolProperty;
+    //    else if (getObject()->IsA<UIntProperty>())    type_ = EClassTypes::UIntProperty;
+    //    else if (getObject()->IsA<UFloatProperty>())  type_ = EClassTypes::UFloatProperty;
+    //    else if (getObject()->IsA<UStrProperty>())    type_ = EClassTypes::UStrProperty;
+    //    else if (getObject()->IsA<UNameProperty>())   type_ = EClassTypes::UNameProperty;
+    //    else if (getObject()->IsA<UQWordProperty>())  type_ = EClassTypes::UQWordProperty;
 
-        else if (getObject()->IsA<UObjectProperty>())    type_ = EClassTypes::UObjectProperty;
-        else if (getObject()->IsA<UClassProperty>())     type_ = EClassTypes::UClassProperty;
-        else if (getObject()->IsA<UInterfaceProperty>()) type_ = EClassTypes::UInterfaceProperty;
-        else if (getObject()->IsA<UStructProperty>())    type_ = EClassTypes::UStructProperty;
-        else if (getObject()->IsA<UArrayProperty>())     type_ = EClassTypes::UArrayProperty;
-        else if (getObject()->IsA<UMapProperty>())       type_ = EClassTypes::UMapProperty;
-        else if (getObject()->IsA<UDelegateProperty>())  type_ = EClassTypes::UDelegateProperty;
+    //    else if (getObject()->IsA<UObjectProperty>())    type_ = EClassTypes::UObjectProperty;
+    //    else if (getObject()->IsA<UClassProperty>())     type_ = EClassTypes::UClassProperty;
+    //    else if (getObject()->IsA<UInterfaceProperty>()) type_ = EClassTypes::UInterfaceProperty;
+    //    else if (getObject()->IsA<UStructProperty>())    type_ = EClassTypes::UStructProperty;
+    //    else if (getObject()->IsA<UArrayProperty>())     type_ = EClassTypes::UArrayProperty;
+    //    else if (getObject()->IsA<UMapProperty>())       type_ = EClassTypes::UMapProperty;
+    //    else if (getObject()->IsA<UDelegateProperty>())  type_ = EClassTypes::UDelegateProperty;
 
-        else if (getObject()->IsA<UFunction>())      type_ = EClassTypes::UFunction;
-        else if (getObject()->IsA<UConst>())         type_ = EClassTypes::UConst;
-        else if (getObject()->IsA<UEnum>())          type_ = EClassTypes::UEnum;
-        else if (getObject()->IsA<UScriptStruct>())  type_ = EClassTypes::UScriptStruct;
-        else if (getObject()->IsA<UClass>())         type_ = EClassTypes::UClass;
-        else if (getObject()->IsA<UStruct>())        type_ = EClassTypes::UStruct;
+    //    else if (getObject()->IsA<UFunction>())      type_ = EClassTypes::UFunction;
+    //    else if (getObject()->IsA<UConst>())         type_ = EClassTypes::UConst;
+    //    else if (getObject()->IsA<UEnum>())          type_ = EClassTypes::UEnum;
+    //    else if (getObject()->IsA<UScriptStruct>())  type_ = EClassTypes::UScriptStruct;
+    //    else if (getObject()->IsA<UClass>())         type_ = EClassTypes::UClass;
+    //    else if (getObject()->IsA<UStruct>())        type_ = EClassTypes::UStruct;
 
-        else type_ = EClassTypes::Unknown;
+    //    else type_ = EClassTypes::Unknown;
 
-        return type_;
-    }
+    //    return type_;
+    //}
 
     auto hasChildren() const -> bool {
-        if (getObject()->IsA<UScriptStruct>() || getObject()->IsA<UStruct>() || getObject()->IsA<UClass>()) {
-            return static_cast<UStruct*>(getObject())->Children;
+        auto* obj = getObject();
+        if (Runtime::types::inheritsFrom(obj->Class, Runtime::uclass::find("Core.Struct"))) {
+            return static_cast<UStruct*>(obj)->Children != nullptr;
         }
         return false;
     }
@@ -341,7 +338,6 @@ public:
     auto getOverrideEmitName() const -> std::optional<std::string> {
         return overrideEmitName_;
     }
-
 
     void setAlternateEmitName(const std::string& name) const {
         printf("[INFO] calling setAlternateEmitName: %s\n", name.c_str());
@@ -408,7 +404,6 @@ public:
         oss << "  Package*: " << getPackage() << "\n";
         oss << "  Package:       \"" << getPackageName() << "\"\n";
         oss << "  SanitizedName: \"" << getSanitizedName() << "\"\n";
-        oss << "  Type: " << ToString(getType()) << "\n";
         oss << "  UObject*: " << getObject() << "\n";
         oss << "}";
 
