@@ -254,7 +254,7 @@ public:
         // do not be tempted to add it here
 
         fmt::print(file
-            , "    r::callProcessEvent({}\n        , r::findFunction(\"{}\")\n        , &params\n    );\n"
+            , "    r::callProcessEvent(\n        {}\n        , r::findFunction(\"{}\")\n        , &params\n    );\n"
             , isStaticFunction() ? "r::uclass::find(className)" : "this"
             , getFullName()
         );
