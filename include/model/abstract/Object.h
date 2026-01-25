@@ -10,7 +10,9 @@
 #include "Schema.h"
 #include "TypeRules.h"
 
-class ObjectEntry {
+using obj_pool = Runtime::uobject::game_pool;
+
+class SDK_API ObjectEntry {
 public:
     virtual ~ObjectEntry() = default;
 
@@ -20,12 +22,74 @@ public:
     }
 
     static auto UObjectClass() -> UClass* {
-        static UClass* cached =
-            Runtime::uclass::find("Class Core.Object");
+        static UClass* cached = Runtime::uclass::find("Class Core.Object");
         return cached;
     }
 
+    auto fullName() const -> std::string {
+        std::string fullName = this->getName();
+
+        for (const UObject* uOuter = uObject_->Outer; uOuter; uOuter = uOuter->Outer) {
+            fullName = (uOuter->GetName() + "." + fullName);
+        }
+
+        fullName = (uObject_->Class->GetName() + " " + fullName);
+        return fullName;
+    }
+
+    auto getName() const -> std::string {
+        return uObject_->Name.ToString();
+    }
+
+    auto getNameCPP() -> std::string {
+        std::string nameCPP;
+
+        if (strcmp(uObject_->className, "Class Core.Class") == 0) {
+            auto uClass = reinterpret_cast<UClass*>(this);
+
+            while (uClass) {
+                if (std::string clName = uClass->GetName(); clName == "Actor") {
+                    nameCPP += "A";
+                    break;
+                } else if (clName == "Object") {
+                    nameCPP += "U";
+                    break;
+                }
+
+                uClass = reinterpret_cast<UClass*>(uClass->SuperField);
+            }
+        } else {
+            nameCPP += "F";
+        }
+
+        nameCPP += uObject_->GetName();
+        return nameCPP;
+    }
+
+    auto getClassNameCPP() const -> std::string {
+        if (UObject* outer = getObject()->Outer; outer && outer->IsA(UClass::StaticClass())) {
+            return outer->GetNameCPP();
+        }
+        return "";
+    }
+
     inline static const std::unordered_set<std::string> EMPTY_STR_SET;
+
+    auto hasAnyFlags(EObjectFlags Flags) const -> bool {
+        return (uObject_->ObjectFlags & Flags) != 0;
+    }
+
+    auto hasAllFlags(EObjectFlags Flags) const -> bool {
+        return (uObject_->ObjectFlags & Flags) == Flags;
+    }
+
+    auto getPackageObj() const -> UObject* {
+        UObject* uPackage = nullptr;
+        for (UObject* uOuter = uObject_->Outer; uOuter; uOuter = uOuter->Outer) {
+            uPackage = uOuter;
+        }
+        return uPackage;
+    }
 
     virtual void iterateDependencies() {};
     virtual void iterateProperties() {};
@@ -41,12 +105,12 @@ public:
     virtual auto isArgument()          const -> bool { return false; }
     virtual auto isTriviallyCopyable() const -> bool { return false; }
 
-    [[nodiscard]] virtual auto getEmitType(const std::string& currentPackage = "") const -> std::string& { return emitTypeStr_; };
-    [[nodiscard]] virtual auto getCanonicalType() const -> std::string { return "<unknown>"; }
-    [[nodiscard]] virtual auto getDefaultClassName() const -> std::string { return "<unknown>"; }
-    [[nodiscard]] virtual auto getCacheType() const -> std::string { return "CacheEntry"; }
+    virtual auto getEmitType(const std::string& currentPackage = "") const -> std::string& { return emitTypeStr_; };
+    virtual auto getCanonicalType() const -> std::string { return "<unknown>"; }
+    virtual auto getDefaultClassName() const -> std::string { return "<unknown>"; }
+    virtual auto getCacheType() const -> std::string { return "CacheEntry"; }
 
-    [[nodiscard]] static auto getGameAlignment() -> uint64_t {
+    static auto getGameAlignment() -> uint64_t {
         static uint64_t cached = -1;
         static std::once_flag flag;
 
@@ -258,13 +322,6 @@ public:
             }
         }
         return outerName_;
-    }
-
-    auto getClassNameCPP() const -> std::string {
-        if (UObject* outer = getObject()->Outer; outer && outer->IsA(UClass::StaticClass())) {
-            return outer->GetNameCPP();
-        }
-        return "";
     }
 
     void setOverrideEmitName(const std::string& name) const {

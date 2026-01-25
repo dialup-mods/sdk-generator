@@ -345,17 +345,17 @@ public:
                     if (typeRules.isBlacklisted(method->getReturnType())) { return; }
                 }
 
-                //const auto schemaClass = SchemaLoader::instance().getClass(c->getNameCPP());
-                //if (schemaClass && schemaClass->isFinal) {
-        	//    Logger::instance().log("skipping: {} (final)", c->getNameCPP());
-                //    return;
-                //}
+                const auto schemaClass = SchemaLoader::instance().getClass(c->getNameCPP());
+                if (schemaClass && schemaClass->isFinal) {
+        	    Logger::instance().log("skipping: {} (final)", c->getNameCPP());
+                    return;
+                }
 
-                //if (schemaClass && schemaClass->isReplace) {
-                //    Logger::instance().log("replacing: {}", c->getNameCPP());
-                //    schemaClass->emitSource(file);
-                //    return;
-                //}
+                if (schemaClass && schemaClass->isReplace) {
+                    Logger::instance().log("replacing: {}", c->getNameCPP());
+                    schemaClass->emitSource(file);
+                    return;
+                }
 
                 c->emitClassSignature(file);
                 c->emitClassName(file);
@@ -369,11 +369,11 @@ public:
                 //if (c->getFullName().find("Core.Object") != std::string::npos ) {
                 //    SchemaLoader::instance().describe();
                 //}
-                //if (schemaClass) {
-                //    printf("emitting injected methods");
-                //    schemaClass->emitInjectedMethodsText(file);
-                //    schemaClass->hasProcessed = true;
-                //}
+                if (schemaClass) {
+                    fputs("\n", file);
+                    schemaClass->emitInjectedMethodsText(file);
+                    schemaClass->hasProcessed = true;
+                }
 
                 c->emitMethods(file);
                 c->emitClose(file);

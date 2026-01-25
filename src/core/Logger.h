@@ -9,40 +9,9 @@
 
 #include "ConfigManager.h"
 #include "MessageBox.h"
+#include "StringUtil.h"
 
 static std::mutex consoleMutex;
-
-inline auto
-enwiden(const std::string& input) -> std::wstring {
-    if (input.empty()) return L"";
-
-    int sizeRequired = MultiByteToWideChar(CP_UTF8, 0, input.c_str(), -1, nullptr, 0);
-    if (sizeRequired == 0) return L"[enwiden error]";
-
-    std::wstring result(sizeRequired, L'\0');
-    MultiByteToWideChar(CP_UTF8, 0, input.c_str(), -1, &result[0], sizeRequired);
-
-    // Remove null terminator Windows sticks in there
-    result.pop_back();
-
-    return result;
-}
-
-inline auto
-enshrinken(const std::wstring& input) -> std::string {
-    if (input.empty()) return "";
-
-    int sizeRequired = WideCharToMultiByte(CP_UTF8, 0, input.c_str(), -1, nullptr, 0, nullptr, nullptr);
-    if (sizeRequired == 0) return "[enshrinken error]";
-
-    std::string result(sizeRequired, '\0');
-    WideCharToMultiByte(CP_UTF8, 0, input.c_str(), -1, &result[0], sizeRequired, nullptr, nullptr);
-
-    // Remove null terminator
-    result.pop_back();
-
-    return result;
-}
 
 class Logger {
     Logger() = default;
@@ -112,7 +81,7 @@ public:
     }
 
     //static void log(const std::wstring& ws, const bool newline = true) {
-    //    logImpl(newline, "{}", enshrinken(ws));
+    //    logImpl(newline, "{}", util::string::enshrinken(ws));
     //}
 
     //static void log(const std::wstring& str, const bool bFlush = true, const bool newline = true) {
@@ -120,7 +89,7 @@ public:
     //    std::wcout << formattedMsg.c_str();
 
     //    if (!handle_) { return; }
-    //    fprintf(handle_, enshrinken(formattedMsg).c_str()); // NOLINT(*-pro-type-vararg)
+    //    fprintf(handle_, util::string::enshrinken(formattedMsg).c_str()); // NOLINT(*-pro-type-vararg)
     //    if (bFlush) { fflush(handle_); }
     //}
 
@@ -150,7 +119,7 @@ public:
     }
 
     void print(const std::wstring& ws, const bool newline = true) {
-        print(newline, "{}", enshrinken(ws));
+        print(newline, "{}", util::string::enshrinken(ws));
     }
 
     void print(const std::wstring& str, const bool bFlush = true, const bool newline = true) {
@@ -158,7 +127,7 @@ public:
         std::wcout << formattedMsg.c_str();
 
         if (!handle_) { return; }
-        fprintf(handle_, enshrinken(formattedMsg).c_str()); // NOLINT(*-pro-type-vararg)
+        fmt::print(handle_, "{}", util::string::enshrinken(formattedMsg));
         if (bFlush) { fflush(handle_); }
     }
 

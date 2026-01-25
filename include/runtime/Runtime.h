@@ -1,4 +1,19 @@
 #pragma once
+//
+// Interface to the game's runtime data
+// kind of has become a dumping ground for things closely related to the engine
+//
+// but this is object cache, function name cache, class name cache.. and related methods
+//
+// FNameEntry to string gets a pass because those are baked in
+//
+// DO NOT make methods like fname::toString..
+//
+// instead, r::fname::wrap()->str()
+//
+// wrap() wraps the fname into an FNameEntry (soon to be renamed FNameView.. maybe)
+//
+
 #include <map>
 #include <optional>
 #include <string>
@@ -17,6 +32,8 @@ class FNameEntry;
 class UObject;
 class FName;
 template<typename T> class TArray;
+
+class ObjectEntry;
 
 class SDK_API Runtime {
     static Runtime* instance_;
@@ -48,6 +65,9 @@ public:
             static auto ref() -> std::vector<UObject*>& { return uObjectsCache_; }
             static auto rawObjects() -> const std::vector<UObject*>& { return uObjectsCache_; }
         };
+
+        static auto wrap(UObject*) -> ObjectEntry;
+        static auto isa() -> bool;
     };
 
     struct SDK_API fname {
@@ -69,6 +89,7 @@ public:
 
         };
 
+        static auto wrap(UObject*) -> ObjectEntry;
         static auto toWString(const FName&) -> std::optional<std::wstring>;
         static auto unknown() -> const FName&;
         static auto none() -> const FName&;
@@ -82,6 +103,7 @@ public:
             static void add(const std::string& name, UFunction* fn) { functionCache_[name] = fn; }
         };
         static auto find(const std::string& functionFullName) -> UFunction*;
+        static auto wrap(UObject*) -> ObjectEntry;
     };
 
     struct SDK_API uclass {
@@ -91,14 +113,23 @@ public:
             static void add(const std::string& name, UClass* cls) { classCache_[name] = cls; }
         };
         static auto find(const std::string& classFullName) -> UClass*;
+        static auto wrap(UObject*) -> ObjectEntry;
     };
 
     struct SDK_API process_event {
-        static void call(UObject* self, UFunction* function, void* params);
-        static void call(UObject* self, UFunction* function, void* params, void* unusedResult);
+        static void call(UObject* self, UFunction* function, void* params, void* unusedResult = nullptr);
     };
 
     struct SDK_API packages {
-        static auto find() -> std::vector<UObject*>;
+        static auto findAll() -> std::vector<UObject*>;
+    };
+
+    struct SDK_API types {
+        static auto knowsClass();
+        static auto conformsTo(obj, ClassId::UClass);
+        static auto inheritsFrom(obj, ClassId::UClass);
+        //if (!knowsClass(className)) {
+        //    DIALUP_ASSERT("Unknown class queried; treating as UObject");
+        //}
     };
 };

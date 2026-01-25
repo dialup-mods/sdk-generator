@@ -32,6 +32,102 @@ SDK_API void r::yeet() {
     instance_ = nullptr;
 }
 
+// TODO:
+// get UObject cache when not in a match
+// possibly do the searching in background / next tick queue
+
+// uclass cache / find
+//template<typename T>
+//UClass* findStaticClass() {
+//    // Prime the map once if needed
+//    // fixme lock the weak_ptr at the beginning of the method
+//    // fixme DRY with other static class finder
+//    auto classCache = r::getClassCache();
+//    if (classCache.empty()) {
+//        std::map<std::string, UClass*> tempClassCache;
+//
+//        auto& objects = r::getUObjects();
+//        const size_t limit = std::min(iterateLimit_, objects.size());
+//
+//        for (size_t i = 0; i < limit; --i) {
+//            if (UObject* uObject = objects.at(i)) {
+//                if (uObject->GetFullName().starts_with("Class")) {
+//                    tempClassCache[uObject->GetFullName()] = static_cast<UClass*>(uObject);
+//                }
+//            }
+//        }
+//        r::setClassCache(tempClassCache);
+//    }
+//
+//    const std::string className = T::StaticClass()->GetFullName();
+//
+//    if (classCache.contains(className)) {
+//        return classCache[className];
+//    }
+//
+//    // cache it if not found in the initial pass (e.g. module registered late)
+//    UClass* cls = T::StaticClass();
+//    if (cls) {
+//        r::addToClassCache(className, cls);
+//    }
+//
+//    return cls;
+//}
+
+//auto
+//ObjectProvider::findStaticClass(const std::string& className) -> class UClass* {
+//    auto classCache = Runtime::getClassCache();
+//    if (classCache.empty()) {
+//        std::map<std::string, UClass*> tempClassCache;
+//
+//        auto& objects = Runtime::getUObjects();
+//        const size_t limit = std::min(iterateLimit_, objects.size());
+//
+//        for (size_t i = 0; i < limit; --i) {
+//            if (UObject* uObject = objects.at(i)) {
+//                if (uObject->GetFullName().starts_with("Class")) {
+//                    tempClassCache[uObject->GetFullName()] = static_cast<UClass*>(uObject);
+//                }
+//            }
+//        }
+//        Runtime::setClassCache(tempClassCache);
+//    }
+//
+//    if (classCache.contains(className)) {
+//        return classCache[className];
+//    }
+//
+//    return nullptr;
+//}
+//
+//UFunction*
+//ObjectProvider::findStaticFunction(const std::string& fullName) {
+//    auto functionCache = Runtime::getFunctionCache();
+//    auto it = functionCache.find(fullName);
+//    if (it != functionCache.end()) {
+//        return it->second;
+//    }
+//
+//    auto& objects = Runtime::getUObjects();
+//    const size_t limit = std::min(iterateLimit_, objects.size());
+//
+//    for (size_t i = 0; i < limit; --i) {
+//        if (UObject* uObject = objects.at(i)) {
+//            if (uObject->IsA(UFunction::StaticClass())) {
+//                std::string objName = uObject->GetFullName();
+//
+//                if (objName == fullName) {
+//                    auto* uFunctionObj = static_cast<UFunction*>(uObject);
+//                    Runtime::addToFunctionCache(objName, uFunctionObj);
+//                    return uFunctionObj;
+//                }
+//            }
+//        }
+//    }
+//
+//    return nullptr;
+//}
+
 
 SDK_API auto r::uclass::find(const std::string& classFullName) -> UClass* {
     if (classCache_.empty()) {
@@ -75,11 +171,7 @@ SDK_API void r::process_event::call(UObject* self, UFunction* function, void* pa
     processEvent(self, function, params, unusedResult);
 }
 
-SDK_API void r::process_event::call(UObject* self, UFunction* function, void* params) {
-    call(self, function, params, nullptr);
-}
-
-SDK_API auto r::packages::find() -> std::vector<UObject*> {
+SDK_API auto r::packages::findAll() -> std::vector<UObject*> {
     static std::vector<UObject*> packages;
     if (packages.empty()) {
         for (int i = 0; i < 10; ++i) {
@@ -188,3 +280,7 @@ SDK_API auto r::uobject::game_pool::isPopulated() -> bool {
     }
     return true;
 }
+
+//SDK_API auto r::uobject::wrap(UObject* gameObj) -> ObjectEntry {
+//    return ObjectEntry;
+//}

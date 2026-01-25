@@ -34,7 +34,6 @@ public:
             if (cached->isReturnParam()) {
                 returnParam_ = cached;
             } else if (cached->isArgument()) {
-                //Logger::log("adding argument {}", cached->getNameCPP());
                 arguments_.emplace_back(cached);
             } else if (cached->isOutParam()) {
                 outParams_.emplace_back(cached);
@@ -254,7 +253,7 @@ public:
         // do not be tempted to add it here
 
         fmt::print(file
-            , "    r::callProcessEvent(\n        {}\n        , r::findFunction(\"{}\")\n        , &params\n    );\n"
+            , "    r::process_event::call(\n        {}\n        , r::ufunction::find(\"{}\")\n        , &params\n    );\n"
             , isStaticFunction() ? "r::uclass::find(className)" : "this"
             , getFullName()
         );
