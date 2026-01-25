@@ -101,7 +101,7 @@ public:
     }
 
     auto getClassNameCPP() const -> std::string {
-        if (UObject* outer = getObject()->Outer; outer && strcmp(outer->baseClassName, "Class Core.Class") == 0) {
+        if (UObject* outer = getObject()->Outer; outer && outer->Class->GetFullName() == "Class Core.Class") {
             return outer->GetNameCPP();
         }
         return "";

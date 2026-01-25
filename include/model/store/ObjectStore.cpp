@@ -165,61 +165,63 @@ auto ObjectStore::add(UObject* rawObj, const std::string& origin = "") -> Object
         return nullptr;
     }
 
+    //Logger::instance().log("class: " + rawObj->Class->GetFullName() + "\n  origin: " + origin);
+    //Logger::instance().log("UClass::StaticClass(): " + UClass::StaticClass()->GetName());
+    //Logger::instance().log("UScriptStruct::StaticClass(): " + UScriptStruct::StaticClass()->GetName());
+
     std::unique_ptr<ObjectEntry> entry;
-    if (rawObj->IsA(UArrayProperty::StaticClass())) {
+    if (r::types::inheritsFrom(rawObj, r::uclass::find("Class Core.ArrayProperty"))) {
         entry = std::make_unique<UArrayPropertyEntry>(rawObj);
-    } else if (rawObj->IsA(UStrProperty::StaticClass())) {
+    } else if (r::types::inheritsFrom(rawObj, r::uclass::find("Class Core.StrProperty"))) {
         entry = std::make_unique<UStrPropertyEntry>(rawObj);
-    } else if (rawObj->IsA(UIntProperty::StaticClass())) {
+    } else if (r::types::inheritsFrom(rawObj, r::uclass::find("Class Core.IntProperty"))) {
         entry = std::make_unique<UIntPropertyEntry>(rawObj);
-    } else if (rawObj->IsA(UFloatProperty::StaticClass())) {
+    } else if (r::types::inheritsFrom(rawObj, r::uclass::find("Class Core.FloatProperty"))) {
         entry = std::make_unique<UFloatPropertyEntry>(rawObj);
-    } else if (rawObj->IsA(UDelegateProperty::StaticClass())) {
+    } else if (r::types::inheritsFrom(rawObj, r::uclass::find("Class Core.DelegateProperty"))) {
         entry = std::make_unique<UDelegatePropertyEntry>(rawObj);
-    } else if (rawObj->IsA(UNameProperty::StaticClass())) {
+    } else if (r::types::inheritsFrom(rawObj, r::uclass::find("Class Core.NameProperty"))) {
         entry = std::make_unique<UNamePropertyEntry>(rawObj);
-    } else if (rawObj->IsA(UStructProperty::StaticClass())) {
+    } else if (r::types::inheritsFrom(rawObj, r::uclass::find("Class Core.StructProperty"))) {
         entry = std::make_unique<UStructPropertyEntry>(rawObj);
-    } else if (rawObj->IsA(UClassProperty::StaticClass())) {
+    } else if (r::types::inheritsFrom(rawObj, r::uclass::find("Class Core.ClassProperty"))) {
         entry = std::make_unique<UClassPropertyEntry>(rawObj);
-    } else if (rawObj->IsA(UObjectProperty::StaticClass())) {
+    } else if (r::types::inheritsFrom(rawObj, r::uclass::find("Class Core.ObjectProperty"))) {
         entry = std::make_unique<UObjectPropertyEntry>(rawObj);
-    } else if (rawObj->IsA(UMapProperty::StaticClass())) {
+    } else if (r::types::inheritsFrom(rawObj, r::uclass::find("Class Core.MapProperty"))) {
         entry = std::make_unique<UMapPropertyEntry>(rawObj);
-    } else if (rawObj->IsA(UInterfaceProperty::StaticClass())) {
+    } else if (r::types::inheritsFrom(rawObj, r::uclass::find("Class Core.InterfaceProperty"))) {
         entry = std::make_unique<UInterfacePropertyEntry>(rawObj);
-    } else if (rawObj->IsA(UQWordProperty::StaticClass())) {
+    } else if (r::types::inheritsFrom(rawObj, r::uclass::find("Class Core.QWordProperty"))) {
         entry = std::make_unique<UQWordPropertyEntry>(rawObj);
-    } else if (rawObj->IsA(UBoolProperty::StaticClass())) {
+    } else if (r::types::inheritsFrom(rawObj, r::uclass::find("Class Core.BoolProperty"))) {
         entry = std::make_unique<UBoolPropertyEntry>(rawObj);
-    } else if (rawObj->IsA(UByteProperty::StaticClass())) {
+    } else if (r::types::inheritsFrom(rawObj, r::uclass::find("Class Core.ByteProperty"))) {
         entry = std::make_unique<UBytePropertyEntry>(rawObj);
-    } else if (rawObj->IsA(UEnum::StaticClass())) {
-        Logger::instance().log("enum");
+    } else if (r::types::inheritsFrom(rawObj, r::uclass::find("Class Core.Enum"))) {
         entry = std::make_unique<EnumEntry>(rawObj);
-    } else if (rawObj->IsA(UClass::StaticClass())) {
+    } else if (r::types::inheritsFrom(rawObj, r::uclass::find("Class Core.Class"))) {
         entry = std::make_unique<ClassEntry>(rawObj);
-        Logger::instance().log("class");
         nameToEntry_[rawObj->Name.ToString()] = entry.get();
-    } else if (rawObj->IsA(UFunction::StaticClass())) {
+    } else if (r::types::inheritsFrom(rawObj, r::uclass::find("Class Core.Function"))) {
         entry = std::make_unique<UFunctionEntry>(rawObj);
-    } else if (rawObj->IsA(UScriptStruct::StaticClass())) {
+    } else if (r::types::inheritsFrom(rawObj, r::uclass::find("Class Core.ScriptStruct"))) {
         entry = std::make_unique<UScriptStructEntry>(rawObj);
         // fixme getFullName is empty
         nameToStruct_[entry->getFullName()] = entry.get();
-    } else if (rawObj->IsA(UState::StaticClass())) {
+    } else if (r::types::inheritsFrom(rawObj, r::uclass::find("Class Core.State"))) {
         //Logger::instance().log("[WARN] UState. Not yet implemented. {}", entry->getFullName());
         return nullptr;
         // fixme unimplemented
         //entry = std::make_unique<UState>(rawObj);
-    } else if (rawObj->IsA(UStruct::StaticClass())) {
+    } else if (r::types::inheritsFrom(rawObj, r::uclass::find("Class Core.Struct"))) {
         Logger::instance().log("[WARN] Raw UStruct.");
         entry = std::make_unique<UStructEntry>(rawObj);
         nameToStruct_[entry->getFullName()] = entry.get();
-    } else if (rawObj->IsA(UConst::StaticClass())) {
+    } else if (r::types::inheritsFrom(rawObj, r::uclass::find("Class Core.Const"))) {
         entry = std::make_unique<ConstEntry>(rawObj);
         nameToStruct_[entry->getFullName()] = entry.get();
-    } else if (rawObj->IsA(UObject::StaticClass())) {
+    } else if (r::types::inheritsFrom(rawObj, r::uclass::find("Class Core.Object"))) {
         entry = std::make_unique<UObjectEntry>(rawObj);
     } else {
         entry = std::make_unique<ObjectEntry>(rawObj);
@@ -227,74 +229,8 @@ auto ObjectStore::add(UObject* rawObj, const std::string& origin = "") -> Object
         Logger::instance().log("[WARN] Using fallback type for: {}", entry->getFullName());
     }
 
-    //Logger::instance().log("class: " + rawObj->Class->GetFullName() + "\n  origin: " + origin);
-    //Logger::instance().log("UClass::StaticClass(): " + UClass::StaticClass()->GetName());
-    //Logger::instance().log("UScriptStruct::StaticClass(): " + UScriptStruct::StaticClass()->GetName());
-//    if (Runtime::types::inheritsFrom(rawObj, UByteProperty::StaticClass())) {
-//        entry = std::make_unique<UBytePropertyEntry>(rawObj);
-//    } else if (Runtime::types::inheritsFrom(rawObj, UIntProperty::StaticClass())) {
-//        entry = std::make_unique<UIntPropertyEntry>(rawObj);
-//    } else if (Runtime::types::inheritsFrom(rawObj, UBoolProperty::StaticClass())) {
-//        entry = std::make_unique<UBoolPropertyEntry>(rawObj);
-//    } else if (Runtime::types::inheritsFrom(rawObj, UFloatProperty::StaticClass())) {
-//        entry = std::make_unique<UFloatPropertyEntry>(rawObj);
-//    } else if (Runtime::types::inheritsFrom(rawObj, UNameProperty::StaticClass())) {
-//        entry = std::make_unique<UNamePropertyEntry>(rawObj);
-//    } else if (Runtime::types::inheritsFrom(rawObj, UStrProperty::StaticClass())) {
-//        entry = std::make_unique<UStrPropertyEntry>(rawObj);
-//    } else if (Runtime::types::inheritsFrom(rawObj, UQWordProperty::StaticClass())) {
-//        entry = std::make_unique<UQWordPropertyEntry>(rawObj);
-//    } else if (Runtime::types::inheritsFrom(rawObj, UArrayProperty::StaticClass())) {
-//        entry = std::make_unique<UArrayPropertyEntry>(rawObj);
-//    } else if (Runtime::types::inheritsFrom(rawObj, UMapProperty::StaticClass())) {
-//        entry = std::make_unique<UMapPropertyEntry>(rawObj);
-//    } else if (Runtime::types::inheritsFrom(rawObj, UClassProperty::StaticClass())) {
-//        entry = std::make_unique<UClassPropertyEntry>(rawObj);
-//    } else if (Runtime::types::inheritsFrom(rawObj, UDelegateProperty::StaticClass())) {
-//        entry = std::make_unique<UDelegatePropertyEntry>(rawObj);
-//    } else if (Runtime::types::inheritsFrom(rawObj, UStructProperty::StaticClass())) {
-//        entry = std::make_unique<UStructPropertyEntry>(rawObj);
-//    } else if (Runtime::types::inheritsFrom(rawObj, UClassProperty::StaticClass())) {
-//        entry = std::make_unique<UClassPropertyEntry>(rawObj);
-//    } else if (Runtime::types::inheritsFrom(rawObj, UObjectProperty::StaticClass())) {
-//        entry = std::make_unique<UObjectPropertyEntry>(rawObj);
-//    } else if (Runtime::types::inheritsFrom(rawObj, UInterfaceProperty::StaticClass())) {
-//        entry = std::make_unique<UInterfacePropertyEntry>(rawObj);
-//    } else if (Runtime::types::inheritsFrom(rawObj, UFunction::StaticClass())) {
-//        entry = std::make_unique<UFunctionEntry>(rawObj);
-//    } else if (Runtime::types::inheritsFrom(rawObj, UClass::StaticClass())) {
-//        entry = std::make_unique<ClassEntry>(rawObj);
-//        nameToEntry_[rawObj->Name.ToString()] = entry.get();
-//    } else if (Runtime::types::inheritsFrom(rawObj, UState::StaticClass())) {
-//        //Logger::instance().log("[WARN] UState. Not yet implemented. {}", entry->getFullName());
-//        // fixme unimplemented
-//        //entry = std::make_unique<StateEntry>(rawObj);
-//    } else if (Runtime::types::inheritsFrom(rawObj, UScriptStruct::StaticClass())) {
-//        entry = std::make_unique<UScriptStructEntry>(rawObj);
-//        // fixme getFullName is empty
-//        nameToStruct_[entry->getFullName()] = entry.get();
-
-//    } else if (Runtime::types::inheritsFrom(rawObj, UEnum::StaticClass())) {
-//        entry = std::make_unique<EnumEntry>(rawObj);
-//    } else if (Runtime::types::inheritsFrom(rawObj, UConst::StaticClass())) {
-//        entry = std::make_unique<ConstEntry>(rawObj);
-//        nameToStruct_[entry->getFullName()] = entry.get();
-        //    } else if (Runtime::types::inheritsFrom(rawObj, UStruct::StaticClass())) {
-        //        Logger::instance().log("[WARN] Raw UStruct.");
-        //        entry = std::make_unique<UStructEntry>(rawObj);
-        //        nameToStruct_[entry->getFullName()] = entry.get();
-        //
-        //    } else if (Runtime::types::inheritsFrom(rawObj, UObject::StaticClass())) {
-        //        Logger::instance().log("[WARN] Raw UStruct.");
-        //        entry = std::make_unique<UObjectEntry>(rawObj);
-        //    } else {
-        //        entry = std::make_unique<ObjectEntry>(rawObj);
-        //        // fixme getFullName will crash on invalid elements
-        //        Logger::instance().log("[WARN] Using fallback type for: {}", entry->getFullName());
-        //    }
-//    }
 //    Logger::instance().log("entry: {}", entry->asString());
-//
+
     entry->setOrigin(origin);
 
     if (!entry->isValid()) {
