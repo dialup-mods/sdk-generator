@@ -377,11 +377,10 @@ SDK_API auto r::uobject_utils::getPackage(const UObject* obj) -> UObject* {
     return pkg;
 }
 
-SDK_API auto r::uobject_utils::hasAnyFlags(const UObject* obj, EObjectFlags flags) -> bool {
+SDK_API auto r::uobject_utils::hasAnyFlags(const UObject* obj, const EObjectFlags flags) -> bool {
     return (obj->ObjectFlags & flags) != 0;
 }
 
-SDK_API auto r::uobject_utils::hasAllFlags(const UObject* obj, EObjectFlags flags) -> bool {
+SDK_API auto r::uobject_utils::hasAllFlags(const UObject* obj, const EObjectFlags flags) -> bool {
     return (obj->ObjectFlags & flags) == flags;
-}
 }

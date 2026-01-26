@@ -144,6 +144,7 @@ public:
 
     virtual auto getEmitType(const std::string& currentPackage = "") const -> std::string& { return emitTypeStr_; };
     virtual auto getCanonicalType() const -> std::string { return "<unknown>"; }
+    virtual auto getCanonicalTypeStr() const -> std::string { return "<unknown>"; }
     virtual auto getDefaultClassName() const -> std::string { return "<unknown>"; }
     virtual auto getCacheType() const -> std::string { return "CacheEntry"; }
 
@@ -283,15 +284,15 @@ public:
         return getObject()->Name.ToString();
     }
 
-    auto classify(const UObject* obj) -> EClassTypes {
-        for (auto* cls = obj->Class; cls; cls = static_cast<UClass*>(cls->SuperField)) {
-            auto name = r::uclass::name(cls); // string_view
-            if (auto it = kClassKind.find(name); it != kClassKind.end()) {
-                return it->second;
-            }
-        }
-        return EClassTypes::Unknown;
-    }
+    //auto classify(const UObject* obj) -> EClassTypes {
+    //    for (auto* cls = obj->Class; cls; cls = static_cast<UClass*>(cls->SuperField)) {
+    //        auto name = r::uclass::name(cls); // string_view
+    //        if (auto it = kClassKind.find(name); it != kClassKind.end()) {
+    //            return it->second;
+    //        }
+    //    }
+    //    return EClassTypes::Unknown;
+    //}
 
     auto hasChildren() const -> bool {
         auto* obj = getObject();

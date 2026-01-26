@@ -68,7 +68,7 @@ public:
     auto isArgument() const -> bool override { return isValidProperty() && (getPropertyFlags() & CPF_Parm) && !(getPropertyFlags() & CPF_OutParm) && !(getPropertyFlags() & CPF_ReturnParm); }
     auto isOptional() const -> bool override { return isValidProperty() && getPropertyFlags() & CPF_OptionalParm; }
     auto isOutParam() const -> bool override { return isValidProperty() && (getPropertyFlags() & CPF_OutParm) && (getPropertyFlags() & CPF_Parm); }
-    auto isReturnParam() const -> bool override { return isValidProperty() && (getPropertyFlags() & CPF_ReturnParm) && (getPropertyFlags() & CPF_Parm)}
+    auto isReturnParam() const -> bool override { return isValidProperty() && (getPropertyFlags() & CPF_ReturnParm) && (getPropertyFlags() & CPF_Parm); }
     auto isTriviallyCopyable() const -> bool override { return false; }
     virtual auto canConst() const -> bool { return false; }
 

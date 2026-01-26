@@ -82,6 +82,7 @@ set(INCLUDES
     ${CMAKE_SOURCE_DIR}/include/model/base
     ${CMAKE_SOURCE_DIR}/include/model/helpers
     ${CMAKE_SOURCE_DIR}/include/model/properties
+    ${CMAKE_SOURCE_DIR}/include/model/resolve
     ${CMAKE_SOURCE_DIR}/include/model/store
     ${CMAKE_SOURCE_DIR}/include/model/types
     ${CMAKE_SOURCE_DIR}/src/schema

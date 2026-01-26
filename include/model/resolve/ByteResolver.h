@@ -1,7 +1,6 @@
 #pragma once
 #include "ValueResolver.h"
 #include "SDK.h"
-#include "StringTool.h"
 
 struct ByteResolver {
     static void resolve(ResolvedValue& out, void* valuePtr, UEnum* enumMaybe) {
