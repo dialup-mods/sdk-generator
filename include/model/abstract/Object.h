@@ -4,14 +4,15 @@
 #include <set>
 #include <string>
 
-#include "Runtime.h"
 #include "ConfigManager.h"
 #include "EClassTypes.h"
+#include "Runtime.h"
 #include "Schema.h"
 #include "TypeRules.h"
-#include "Runtime.h"
+#include "ValueResolver.h"
 
 using obj_pool = Runtime::uobject::game_pool;
+using r = Runtime;
 
 class SDK_API ObjectEntry {
 public:
@@ -23,9 +24,11 @@ public:
     }
 
     static auto UObjectClass() -> UClass* {
-        static UClass* cached = Runtime::uclass::find("Class Core.Object");
+        static UClass* cached = r::uclass::find("Class Core.Object");
         return cached;
     }
+
+    virtual void resolveInto(ResolvedValue& out, void* valuePtr) const {}
 
     virtual auto getType() const -> EClassTypes {
         if (type_ != EClassTypes::Unresolved) {
@@ -75,30 +78,30 @@ public:
         return fullName;
     }
 
-    auto getNameCPP() -> std::string {
-        std::string nameCPP;
-
-        if (strcmp(uObject_->baseClassName, "Class Core.Class") == 0) {
-            auto uClass = reinterpret_cast<UClass*>(this);
-
-            while (uClass) {
-                if (std::string clName = uClass->GetName(); clName == "Actor") {
-                    nameCPP += "A";
-                    break;
-                } else if (clName == "Object") {
-                    nameCPP += "U";
-                    break;
-                }
-
-                uClass = reinterpret_cast<UClass*>(uClass->SuperField);
-            }
-        } else {
-            nameCPP += "F";
-        }
-
-        nameCPP += uObject_->GetName();
-        return nameCPP;
-    }
+//    auto getNameCPP() -> std::string {
+//        std::string nameCPP;
+//
+//        if (strcmp(uObject_->baseClassName.data(), "Class Core.Class") == 0) {
+//            auto uClass = reinterpret_cast<UClass*>(this);
+//
+//            while (uClass) {
+//                if (std::string clName = uClass->GetName(); clName == "Actor") {
+//                    nameCPP += "A";
+//                    break;
+//                } else if (clName == "Object") {
+//                    nameCPP += "U";
+//                    break;
+//                }
+//
+//                uClass = reinterpret_cast<UClass*>(uClass->SuperField);
+//            }
+//        } else {
+//            nameCPP += "F";
+//        }
+//
+//        nameCPP += uObject_->GetName();
+//        return nameCPP;
+//    }
 
     auto getClassNameCPP() const -> std::string {
         if (UObject* outer = getObject()->Outer; outer && outer->Class->GetFullName() == "Class Core.Class") {
@@ -280,6 +283,15 @@ public:
         return getObject()->Name.ToString();
     }
 
+    auto classify(const UObject* obj) -> EClassTypes {
+        for (auto* cls = obj->Class; cls; cls = static_cast<UClass*>(cls->SuperField)) {
+            auto name = r::uclass::name(cls); // string_view
+            if (auto it = kClassKind.find(name); it != kClassKind.end()) {
+                return it->second;
+            }
+        }
+        return EClassTypes::Unknown;
+    }
 
     auto hasChildren() const -> bool {
         auto* obj = getObject();

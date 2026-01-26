@@ -4,13 +4,20 @@
 
 #include "LayoutTraits.h"
 #include "Property.h"
+#include "ValueResolver.h"
+#include "resolve/IntegerResolver.h"
 
 class UIntPropertyEntry final : public PropertyEntry, LayoutTraits<UIntProperty, UProperty> {
 public:
     using PropertyEntry::PropertyEntry;
 
+    void resolveInto(ResolvedValue& out, void* valuePtr) const override {
+        IntegerResolver::resolve(out, valuePtr);
+    }
+
     auto getType() const -> EClassTypes override { return EClassTypes::UIntProperty; }
     auto getCanonicalType() const -> std::string override { return "int32_t"; }
+    auto getCanonicalTypeStr() const -> std::string override { return "int32_t"; }
     auto getCacheType() const -> std::string override { return "UIntPropertyEntry"; }
     auto getDefaultClassName() const -> std::string override { return "UIntProperty"; }
     auto isTriviallyCopyable() const -> bool override { return true; }

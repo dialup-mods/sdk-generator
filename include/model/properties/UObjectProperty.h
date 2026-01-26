@@ -3,10 +3,16 @@
 
 #include "LayoutTraits.h"
 #include "Property.h"
+#include "ValueResolver.h"
+#include "resolve/ObjectRefResolver.h"
 
 class UObjectPropertyEntry : public PropertyEntry, LayoutTraits<UObjectProperty, UProperty> {
 public:
     using PropertyEntry::PropertyEntry;
+
+    void resolveInto(ResolvedValue& out, void* valuePtr) const override {
+        ObjectRefResolver::resolve(out, valuePtr, *reinterpret_cast<UObject**>(valuePtr));
+    }
 
     auto getType() const -> EClassTypes override { return EClassTypes::UObjectProperty; }
     auto getEmitType(const std::string& currentPackage) const -> std::string& override {
@@ -34,6 +40,17 @@ public:
         return "class " + objProp->PropertyClass->GetNameCPP() + "*";
         //return objProp->PropertyClass->GetNameCPP() + "*";
     }
+
+    auto getCanonicalTypeStr() const -> std::string override {
+        const auto* objProp = static_cast<UObjectProperty*>(getObject());
+        if (!objProp || !objProp->PropertyClass) {
+            return "UObject*"; // or fallback
+        }
+
+        return "class " + objProp->PropertyClass->GetNameCPP() + "*";
+        //return objProp->PropertyClass->GetNameCPP() + "*";
+    }
+
     auto getCacheType() const -> std::string override { return "UObjectPropertyEntry"; }
     auto getDefaultClassName() const -> std::string override { return "UObjectProperty"; }
     bool isTriviallyCopyable() const override { return false; }

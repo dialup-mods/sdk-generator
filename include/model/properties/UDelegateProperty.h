@@ -3,10 +3,16 @@
 
 #include "LayoutTraits.h"
 #include "Property.h"
+#include "ValueResolver.h"
+#include "resolve/DelegateResolver.h"
 
 class UDelegatePropertyEntry final : public PropertyEntry, LayoutTraits<UDelegateProperty, UProperty> {
 public:
     using PropertyEntry::PropertyEntry;
+
+    void resolveInto(ResolvedValue& out, void* valuePtr) const override {
+        DelegateResolver::resolve(out, valuePtr);
+    }
 
     auto getType() const -> EClassTypes override { return EClassTypes::UDelegateProperty; }
     auto getCanonicalType() const -> std::string override { return "FScriptDelegate"; }

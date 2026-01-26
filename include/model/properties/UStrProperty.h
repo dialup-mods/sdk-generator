@@ -3,13 +3,20 @@
 
 #include "LayoutTraits.h"
 #include "Property.h"
+#include "ValueResolver.h"
+#include "resolve/FStringResolver.h"
 
 class UStrPropertyEntry final : public PropertyEntry, LayoutTraits<UStrProperty, UProperty> {
 public:
     using PropertyEntry::PropertyEntry;
 
+    void resolveInto(ResolvedValue& out, void* valuePtr) const override {
+        IntegerResolver::resolve(out, valuePtr);
+    }
+
     auto getType() const -> EClassTypes override { return EClassTypes::UStrProperty; }
     auto getCanonicalType() const -> std::string override { return "FString"; }
+    auto getCanonicalTypeStr() const -> std::string override { return "FString"; }
     auto getCacheType() const -> std::string override { return "UStrPropertyEntry"; }
     auto getDefaultClassName() const -> std::string override { return "UStrProperty"; }
     bool isTriviallyCopyable() const override { return false; }
