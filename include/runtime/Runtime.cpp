@@ -294,16 +294,36 @@ SDK_API auto r::uobject::game_pool::isPopulated() -> bool {
 //    return ObjectEntry;
 //}
 
+SDK_API auto r::inheritance_cache::inheritsFrom(UClass* child, UClass* parent) -> bool {
+    // Check cache first
+    if (auto it = cache_.find(child); it != cache_.end()) {
+        return it->second.contains(parent);
+    }
+
+    // Not cached - walk and populate
+    std::unordered_set<UClass*> parents;
+    for (auto cls = child; cls; cls = static_cast<UClass*>(cls->SuperField)) {
+        parents.insert(cls);
+    }
+
+    cache_[child] = std::move(parents);
+    return parents.contains(parent);
+}
+
 
 SDK_API auto r::types::isa(const UClass* given, const UClass* other) -> bool {
     if (!given || !other) { return false; }
-    // Walk up the inheritance chain of 'given'
-    for (const UClass* iClass = given;
-      iClass;
-      iClass = reinterpret_cast<UClass*>(iClass->SuperField)) {
-        if (iClass == other) {
-            return true;
+
+    std::unordered_set<const UClass*> visited;  // Detect cycles
+
+    for (const UClass* cls = given; cls; cls = reinterpret_cast<UClass*>(cls->SuperField)) {
+        if (visited.contains(cls)) {
+            printf("ERROR: Cycle detected in inheritance chain at %p\n", cls);
+            return false;
         }
+        visited.insert(cls);
+
+        if (cls == other) return true;
     }
     return false;
 }
@@ -324,18 +344,44 @@ SDK_API auto r::types::inheritsFrom(const UObject* obj, const UClass* targetClas
     return isa(obj->Class, targetClass);
 }
 
-SDK_API auto r::inheritance_cache::inheritsFrom(UClass* child, UClass* parent) -> bool {
-    // Check cache first
-    if (auto it = cache_.find(child); it != cache_.end()) {
-        return it->second.contains(parent);
-    }
+SDK_API auto r::types::getNamePrefix(const UObject* obj) -> std::string {
+    if (!obj || !obj->Class) return "U";
 
-    // Not cached - walk and populate
-    std::unordered_set<UClass*> parents;
-    for (auto cls = child; cls; cls = static_cast<UClass*>(cls->SuperField)) {
-        parents.insert(cls);
-    }
+    if (conformsTo(obj, uclass::find("Class Core.ScriptStruct"))) { return "F"; }
+    if (inheritsFrom(obj, uclass::find("Class Engine.Actor"))) { return "A"; }
 
-    cache_[child] = std::move(parents);
-    return parents.contains(parent);
+    return "U";
+}
+
+SDK_API auto r::uobject_utils::getName(const UObject* obj) -> std::string {
+    return obj->Name.ToString();
+}
+
+SDK_API auto r::uobject_utils::getNameCPP(const UObject* obj) -> std::string {
+    return r::types::getNamePrefix(obj) + getName(obj);
+}
+
+SDK_API auto r::uobject_utils::getFullName(const UObject* obj) -> std::string {
+    std::string fullName = getName(obj);
+    for (auto outer = obj->Outer; outer; outer = outer->Outer) {
+        fullName = getName(outer) + "." + fullName;
+    }
+    return obj->Class->Name.ToString() + " " + fullName;
+}
+
+SDK_API auto r::uobject_utils::getPackage(const UObject* obj) -> UObject* {
+    UObject* pkg = nullptr;
+    for (auto outer = obj->Outer; outer; outer = outer->Outer) {
+        pkg = outer;
+    }
+    return pkg;
+}
+
+SDK_API auto r::uobject_utils::hasAnyFlags(const UObject* obj, EObjectFlags flags) -> bool {
+    return (obj->ObjectFlags & flags) != 0;
+}
+
+SDK_API auto r::uobject_utils::hasAllFlags(const UObject* obj, EObjectFlags flags) -> bool {
+    return (obj->ObjectFlags & flags) == flags;
+}
 }

@@ -27,14 +27,16 @@
 #define SDK_API __declspec(dllimport)
 #endif
 
+
 class UClass;
 class UFunction;
 class FNameEntry;
 class UObject;
 class FName;
+class ObjectEntry;
 template<typename T> class TArray;
 
-class ObjectEntry;
+#include "Flags.h"
 
 class SDK_API Runtime {
     static Runtime* instance_;
@@ -133,6 +135,7 @@ public:
         static auto knowsClass(const UObject* obj) -> bool;
         static auto conformsTo(const UObject* obj, const UClass* targetClass) -> bool;
         static auto inheritsFrom(const UObject* obj, const UClass* targetClass) -> bool;
+        static auto getNamePrefix(const UObject* obj) -> std::string;
         // if (!knowsClass(className)) {
         //    DIALUP_ASSERT("Unknown class queried; treating as UObject");
         //}
@@ -143,5 +146,15 @@ public:
         static inline std::unordered_map<UClass*, std::unordered_set<UClass*>> cache_;
 
         static auto inheritsFrom(UClass* child, UClass* parent) -> bool;
+    };
+
+    struct SDK_API uobject_utils {
+        static auto getName(const UObject* obj) -> std::string;
+        static auto getNameCPP(const UObject* obj) -> std::string;
+        static auto getFullName(const UObject* obj) -> std::string;
+        static auto getPackage(const UObject* obj) -> UObject*;
+        static auto hasAnyFlags(const UObject* obj, EObjectFlags flags) -> bool;
+        static auto hasAllFlags(const UObject* obj, EObjectFlags flags) -> bool;
+
     };
 };
