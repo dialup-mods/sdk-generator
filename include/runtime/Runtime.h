@@ -20,6 +20,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include "Schema.h"
 
 #if defined(SDK_BUILD)
 #define SDK_API __declspec(dllexport)
@@ -71,6 +72,62 @@ public:
             static auto rawObjects() -> const std::vector<UObject*>& { return uObjectsCache_; }
         };
 
+        template <typename T>
+        static auto classOf(UObject*) -> UClass* {
+            static UClass* cached = [] {
+                UClass* cls = uclass::find(T::className);
+                if (!cls) {
+                    printf("can't find\n");
+                }
+                return cls;
+            }();
+            return cached;
+        };
+
+
+        template<typename T>
+        static auto getStaticClassOf() -> UClass* {
+            if (!std::is_base_of_v<UObject, T>) { return nullptr; }
+
+            const auto& objects = game_pool::ref();
+            for (int32_t i = objects.size(); i-- > 0; ) {
+                UObject* uObject = game_pool::ref().at(i);
+                if (!uObject) { continue; }
+                if (uObject->ObjectFlags & RF_DefaultOrArchetypeFlags) { continue; }
+                auto objName = uobject_utils::getFullName(uObject);
+                if (objName.c_str() == T::className ) {
+                    return static_cast<UClass*>(uObject);
+                }
+            }
+            return nullptr;
+        }
+
+        template<typename T>
+        static auto getInstanceOf() -> T* {
+            static_assert(std::is_base_of_v<UObject, T>);
+
+            UClass* wanted = classOf<T>();
+            if (!wanted) return nullptr;
+
+            for (UObject* obj : game_pool::ref()) {
+                if (!obj) continue;
+                if (obj->ObjectFlags & RF_DefaultOrArchetypeFlags) continue;
+
+                if (obj->Class == wanted) {
+                    return static_cast<T*>(obj);
+                }
+            }
+            return nullptr;
+        }
+
+        static auto isSubclassOf(const UObject* obj, const UClass* base) -> bool {
+            // SuperField is UClass* here by invariant
+            for (UClass* cls = obj->Class; cls; cls = static_cast<UClass*>(cls->SuperField)) {
+                if (cls == base) return true;
+            }
+            return false;
+        }
+
         static auto wrap(UObject*) -> ObjectEntry;
         static auto isa() -> bool;
     };
@@ -89,6 +146,8 @@ public:
             static auto find(const FName& wanted) -> std::optional<std::reference_wrapper<const FName>>;
             static auto getString(int32_t) -> std::optional<std::string>;
             static auto getWString(int32_t) -> std::optional<std::wstring>;
+            static auto getString(const FName&) -> std::optional<std::string>;
+            static auto getWString(const FName&) -> std::optional<std::wstring>;
         };
 
         struct SDK_API cache {
@@ -96,6 +155,7 @@ public:
         };
 
         static auto wrap(UObject*) -> ObjectEntry;
+        static auto toString(const FName&) -> std::optional<std::string>;
         static auto toWString(const FName&) -> std::optional<std::wstring>;
         static auto unknown() -> const FName&;
         static auto none() -> const FName&;
@@ -134,8 +194,8 @@ public:
         static auto isa(const UClass* given, const UClass* other) -> bool;
         static auto knowsClass(const UObject* obj) -> bool;
         static auto conformsTo(const UObject* obj, const UClass* targetClass) -> bool;
-        static auto inheritsFrom(const UObject* obj, const UClass* targetClass) -> bool;
-        static auto getNamePrefix(const UObject* obj) -> std::string;
+        static auto inheritsFrom(UObject* obj, UClass* targetClass) -> bool;
+        static auto getNamePrefix(UObject* obj) -> std::string;
         // if (!knowsClass(className)) {
         //    DIALUP_ASSERT("Unknown class queried; treating as UObject");
         //}
@@ -150,11 +210,10 @@ public:
 
     struct SDK_API uobject_utils {
         static auto getName(const UObject* obj) -> std::string;
-        static auto getNameCPP(const UObject* obj) -> std::string;
+        static auto getNameCPP(UObject* obj) -> std::string;
         static auto getFullName(const UObject* obj) -> std::string;
         static auto getPackage(const UObject* obj) -> UObject*;
         static auto hasAnyFlags(const UObject* obj, EObjectFlags flags) -> bool;
         static auto hasAllFlags(const UObject* obj, EObjectFlags flags) -> bool;
-
     };
 };

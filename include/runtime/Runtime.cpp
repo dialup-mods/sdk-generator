@@ -3,6 +3,8 @@
 #include "Schema.h"
 #include "StringUtil.h"
 
+using r = Runtime;
+
 TArray<FNameEntry*>* r::fNameEntries_{nullptr};
 TArray<UObject*>* r::uObjects_{nullptr};
 Runtime* r::instance_{nullptr};
@@ -40,70 +42,6 @@ SDK_API auto r::getName(UObject* obj) -> std::string{
 // get UObject cache when not in a match
 // possibly do the searching in background / next tick queue
 
-// uclass cache / find
-//template<typename T>
-//UClass* findStaticClass() {
-//    // Prime the map once if needed
-//    // fixme lock the weak_ptr at the beginning of the method
-//    // fixme DRY with other static class finder
-//    auto classCache = r::getClassCache();
-//    if (classCache.empty()) {
-//        std::map<std::string, UClass*> tempClassCache;
-//
-//        auto& objects = r::getUObjects();
-//        const size_t limit = std::min(iterateLimit_, objects.size());
-//
-//        for (size_t i = 0; i < limit; --i) {
-//            if (UObject* uObject = objects.at(i)) {
-//                if (uObject->GetFullName().starts_with("Class")) {
-//                    tempClassCache[uObject->GetFullName()] = static_cast<UClass*>(uObject);
-//                }
-//            }
-//        }
-//        r::setClassCache(tempClassCache);
-//    }
-//
-//    const std::string className = T::StaticClass()->GetFullName();
-//
-//    if (classCache.contains(className)) {
-//        return classCache[className];
-//    }
-//
-//    // cache it if not found in the initial pass (e.g. module registered late)
-//    UClass* cls = T::StaticClass();
-//    if (cls) {
-//        r::addToClassCache(className, cls);
-//    }
-//
-//    return cls;
-//}
-
-//auto
-//ObjectProvider::findStaticClass(const std::string& className) -> class UClass* {
-//    auto classCache = Runtime::getClassCache();
-//    if (classCache.empty()) {
-//        std::map<std::string, UClass*> tempClassCache;
-//
-//        auto& objects = Runtime::getUObjects();
-//        const size_t limit = std::min(iterateLimit_, objects.size());
-//
-//        for (size_t i = 0; i < limit; --i) {
-//            if (UObject* uObject = objects.at(i)) {
-//                if (uObject->GetFullName().starts_with("Class")) {
-//                    tempClassCache[uObject->GetFullName()] = static_cast<UClass*>(uObject);
-//                }
-//            }
-//        }
-//        Runtime::setClassCache(tempClassCache);
-//    }
-//
-//    if (classCache.contains(className)) {
-//        return classCache[className];
-//    }
-//
-//    return nullptr;
-//}
-//
 //UFunction*
 //ObjectProvider::findStaticFunction(const std::string& fullName) {
 //    auto functionCache = Runtime::getFunctionCache();
@@ -132,7 +70,6 @@ SDK_API auto r::getName(UObject* obj) -> std::string{
 //    return nullptr;
 //}
 
-
 SDK_API auto r::uclass::find(const std::string& classFullName) -> UClass* {
     if (classCache_.empty()) {
         for (int32_t i = 0; i < uObjects_->size() - 1; i++) {
@@ -155,7 +92,7 @@ SDK_API auto r::ufunction::find(const std::string& functionFullName) -> UFunctio
     if (functionCache_.empty()) {
         for (int32_t i = 0; i < uObjects_->size() - 1; i++) {
             if (UObject* uObject = uObjects_->at(i)) {
-                if (std::string objectFullName = uObject->GetFullName(); objectFullName.find("Function") == 0) {
+                if (std::string objectFullName = uObject->GetFullName(); objectFullName.starts_with("Function")) {
                     functionCache_[objectFullName] = reinterpret_cast<UFunction*>(uObject);
                 }
             }
@@ -236,7 +173,7 @@ SDK_API auto r::fname::game_pool::find(const FName& wanted) -> std::optional<std
     return find(id);
 }
 
-SDK_API auto r::fname::game_pool::find(int32_t id) -> std::optional<std::reference_wrapper<const FName>> {
+SDK_API auto r::fname::game_pool::find(const int32_t id) -> std::optional<std::reference_wrapper<const FName>> {
     const auto& entries = ref();
     if (id < 0 || id >= entries.size()) {
         return std::nullopt;
@@ -267,7 +204,7 @@ SDK_API auto r::fname::none() -> const FName& {
     return none;
 }
 
-SDK_API auto r::fname::game_pool::getWString(int32_t id) -> std::optional<std::wstring> {
+SDK_API auto r::fname::game_pool::getWString(const int32_t id) -> std::optional<std::wstring> {
     const auto& entries = ref();
     if (id >= 0 && id < entries.size() && entries[id]) {
         return std::wstring(entries[id]->Name);
@@ -275,10 +212,23 @@ SDK_API auto r::fname::game_pool::getWString(int32_t id) -> std::optional<std::w
     return std::nullopt;
 }
 
-SDK_API auto r::fname::game_pool::getString(int32_t id) -> std::optional<std::string> {
-    auto wstr = getWString(id);
-    if (wstr) {
+SDK_API auto r::fname::game_pool::getString(const int32_t id) -> std::optional<std::string> {
+    if (auto wstr = getWString(id)) {
         return util::string::enshrinken(wstr.value());
+    }
+    return std::nullopt;
+}
+
+SDK_API auto r::fname::game_pool::getWString(const FName& wanted) -> std::optional<std::wstring> {
+    if (auto fnameMaybe = find(wanted)) {
+        return getWString(fnameMaybe.value().get().FNameEntryId);
+    }
+    return std::nullopt;
+}
+
+SDK_API auto r::fname::game_pool::getString(const FName& wanted) -> std::optional<std::string> {
+    if (auto fnameMaybe = find(wanted)) {
+        return getString(fnameMaybe.value().get().FNameEntryId);
     }
     return std::nullopt;
 }
@@ -306,8 +256,9 @@ SDK_API auto r::inheritance_cache::inheritsFrom(UClass* child, UClass* parent) -
         parents.insert(cls);
     }
 
+    const auto ret = parents.contains(parent);
     cache_[child] = std::move(parents);
-    return parents.contains(parent);
+    return ret;
 }
 
 
@@ -339,12 +290,12 @@ SDK_API auto r::types::conformsTo(const UObject* obj, const UClass* targetClass)
 }
 
 // Does this object inherit from this class? (walks inheritance)
-SDK_API auto r::types::inheritsFrom(const UObject* obj, const UClass* targetClass) -> bool {
+SDK_API auto r::types::inheritsFrom(UObject* obj, UClass* targetClass) -> bool {
     if (!obj || !targetClass) return false;
     return isa(obj->Class, targetClass);
 }
 
-SDK_API auto r::types::getNamePrefix(const UObject* obj) -> std::string {
+SDK_API auto r::types::getNamePrefix(UObject* obj) -> std::string {
     if (!obj || !obj->Class) return "U";
 
     if (conformsTo(obj, uclass::find("Class Core.ScriptStruct"))) { return "F"; }
@@ -357,7 +308,7 @@ SDK_API auto r::uobject_utils::getName(const UObject* obj) -> std::string {
     return obj->Name.ToString();
 }
 
-SDK_API auto r::uobject_utils::getNameCPP(const UObject* obj) -> std::string {
+SDK_API auto r::uobject_utils::getNameCPP(UObject* obj) -> std::string {
     return r::types::getNamePrefix(obj) + getName(obj);
 }
 
