@@ -5,10 +5,16 @@
 
 using r = Runtime;
 
+std::unordered_map<
+    std::string,
+    UClass*,
+    TransparentHash,
+    TransparentEq
+> r::classCache_{};
+
 TArray<FNameEntry*>* r::fNameEntries_{nullptr};
 TArray<UObject*>* r::uObjects_{nullptr};
 Runtime* r::instance_{nullptr};
-std::map<std::string, UClass*> r::classCache_{};
 std::map<std::string, UFunction*> r::functionCache_{};
 std::vector<UObject*> r::uObjectsCache_{};
 
@@ -70,22 +76,21 @@ SDK_API auto r::getName(UObject* obj) -> std::string{
 //    return nullptr;
 //}
 
-SDK_API auto r::uclass::find(const std::string& classFullName) -> UClass* {
+SDK_API auto r::uclass::find(std::string_view classFullName) -> UClass* {
     if (classCache_.empty()) {
-        for (int32_t i = 0; i < uObjects_->size() - 1; i++) {
-            if (UObject* uObject = uObjects_->at(i)) {
-                if (std::string objectFullName = uObject->GetFullName(); objectFullName.starts_with("Class")) {
-                    classCache_[objectFullName] = reinterpret_cast<UClass*>(uObject);
+        for (UObject* uObject : uobject::game_pool::ref()) {
+            if (uObject) {
+                auto fullName = uObject->GetFullName();
+                if (fullName.starts_with("Class")) {
+                    classCache_.emplace(std::move(fullName),
+                        static_cast<UClass*>(uObject));
                 }
             }
         }
     }
 
-    if (classCache_.contains(classFullName)) {
-        return classCache_[classFullName];
-    }
-
-    return nullptr;
+    auto it = classCache_.find(classFullName);
+    return it != classCache_.end() ? it->second : nullptr;
 }
 
 SDK_API auto r::ufunction::find(const std::string& functionFullName) -> UFunction* {

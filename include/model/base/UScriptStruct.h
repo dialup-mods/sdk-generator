@@ -12,6 +12,10 @@
 #include "StructLike.h"
 #include "StructWalker.h"
 #include "Runtime.h"
+#include "Schema.h"
+#include "SDK.h"
+
+using r = Runtime;
 
 class UScriptStructEntry : public StructLikeEntry, LayoutTraits<UStruct, UField> {
 public:
@@ -89,13 +93,13 @@ public:
         }
 
         for (UField* field = uStruct->Children; field; field = field->Next) {
-            if (Runtime::types::inheritsFrom(field, UScriptStruct::StaticClass())) {
+            if (r::types::inheritsFrom(field, r::uclass::find(UScriptStruct::className))) {
                 auto* nestedStruct = static_cast<UScriptStruct*>(field);
                 ObjectStore::instance().add(nestedStruct, fullName);
                 continue;
             }
 
-            if (Runtime::types::inheritsFrom(field, UProperty::StaticClass())) {
+            if (r::types::inheritsFrom(field, r::uclass::find(UProperty::className))) {
                 auto* uProperty = reinterpret_cast<UProperty*>(field);
                 if (uProperty->ElementSize > 0) {
                     if (auto* cached = ObjectStore::instance().add(uProperty, fullName)->as<PropertyEntry>()) {

@@ -14,12 +14,15 @@
 // wrap() wraps the fname into an FNameEntry (soon to be renamed FNameView.. maybe)
 //
 
+class ObjectEntry;
+
 #include <map>
 #include <optional>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include "SDK.h"
 #include "Schema.h"
 
 #if defined(SDK_BUILD)
@@ -28,16 +31,28 @@
 #define SDK_API __declspec(dllimport)
 #endif
 
+struct TransparentHash {
+    using is_transparent = void;
+    size_t operator()(std::string_view sv) const noexcept {
+        return std::hash<std::string_view>{}(sv);
+    }
+};
 
-class UClass;
-class UFunction;
-class FNameEntry;
-class UObject;
-class FName;
-class ObjectEntry;
-template<typename T> class TArray;
+struct TransparentEq {
+    using is_transparent = void;
+    bool operator()(std::string_view a, std::string_view b) const noexcept {
+        return a == b;
+    }
+};
 
 #include "Flags.h"
+
+using ClassCache = std::unordered_map<
+        std::string,
+        UClass*,
+        TransparentHash,
+        TransparentEq
+>;
 
 class SDK_API Runtime {
     static Runtime* instance_;
@@ -45,7 +60,8 @@ class SDK_API Runtime {
     static TArray<FNameEntry*>* fNameEntries_;
     static TArray<UObject*>* uObjects_;
 
-    static std::map<std::string, UClass*> classCache_;
+    static ClassCache classCache_;
+
     static std::map<std::string, UFunction*> functionCache_;
     static std::vector<UObject*> uObjectsCache_;
 
@@ -84,24 +100,7 @@ public:
             return cached;
         };
 
-
-        template<typename T>
-        static auto getStaticClassOf() -> UClass* {
-            if (!std::is_base_of_v<UObject, T>) { return nullptr; }
-
-            const auto& objects = game_pool::ref();
-            for (int32_t i = objects.size(); i-- > 0; ) {
-                UObject* uObject = game_pool::ref().at(i);
-                if (!uObject) { continue; }
-                if (uObject->ObjectFlags & RF_DefaultOrArchetypeFlags) { continue; }
-                auto objName = uobject_utils::getFullName(uObject);
-                if (objName.c_str() == T::className ) {
-                    return static_cast<UClass*>(uObject);
-                }
-            }
-            return nullptr;
-        }
-
+        #ifdef false
         template<typename T>
         static auto getInstanceOf() -> T* {
             static_assert(std::is_base_of_v<UObject, T>);
@@ -127,6 +126,7 @@ public:
             }
             return false;
         }
+        #endif
 
         static auto wrap(UObject*) -> ObjectEntry;
         static auto isa() -> bool;
@@ -174,11 +174,10 @@ public:
 
     struct SDK_API uclass {
         struct SDK_API cache {
-            static void set(std::map<std::string, UClass*>&& cache) { classCache_ = std::move(cache); }
-            static auto ref() -> std::map<std::string, UClass*>& { return classCache_; }
-            static void add(const std::string& name, UClass* cls) { classCache_[name] = cls; }
+            static void set(ClassCache cache) { classCache_ = std::move(cache); }
+            static auto ref() -> ClassCache& { return classCache_; }
         };
-        static auto find(const std::string& classFullName) -> UClass*;
+        static auto find(std::string_view classFullName) -> UClass*;
         static auto wrap(UObject*) -> ObjectEntry;
     };
 
