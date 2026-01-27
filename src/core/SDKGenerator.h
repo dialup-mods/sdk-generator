@@ -46,29 +46,29 @@ public:
     ~SDKGenerator() = default;
 
     auto ensureDirectories() -> bool {
-    //    const std::vector<std::pair<std::string, fs::path>> dirs = {
-    //        //{ "combined include output", ConfigManager::instance().getCombinedIncludeDirAbs() },
-    //        { "sdk output",              ConfigManager::instance().getSDKOutputDir() },
-    //        { "headers",                 ConfigManager::instance().getHeaderDirAbs() },
-    //        { "implementations",         ConfigManager::instance().getImplementationDirAbs() },
-    //        { "meta",                    ConfigManager::instance().getMetaDirAbs() },
-    //    };
+        const std::vector<std::pair<std::string, fs::path>> dirs = {
+            //{ "combined include output", ConfigManager::instance().getCombinedIncludeDirAbs() },
+            { "sdk output",              ConfigManager::instance().getSDKOutputDir() },
+            { "headers",                 ConfigManager::instance().getHeaderDirAbs() },
+            { "implementations",         ConfigManager::instance().getImplementationDirAbs() },
+            { "meta",                    ConfigManager::instance().getMetaDirAbs() },
+        };
 
-    //    for (const auto& [name, path] : dirs) {
-    //        Logger::instance().log("  Output directories:");
-    //        Logger::instance().log("    {:<24}{}", name, path.string());
-    //        Logger::instance().log("");
-    //    }
+        for (const auto& [name, path] : dirs) {
+            Logger::instance().log("  Output directories:");
+            Logger::instance().log("    {:<24}{}", name, path.string());
+            Logger::instance().log("");
+        }
 
-    //    for (const auto& [name, path] : dirs) {
-    //        std::error_code ec;
-    //        fs::create_directories(path, ec);  // safe: creates parents too
+        for (const auto& [name, path] : dirs) {
+            std::error_code ec;
+            fs::create_directories(path, ec);  // safe: creates parents too
 
-    //        if (ec) {
-    //            Logger::instance().log("[ERROR] Failed to create {} directory '{}': {}", name, path.string(), ec.message());
-    //            return false;
-    //        }
-    //    }
+            if (ec) {
+                Logger::instance().log("[ERROR] Failed to create {} directory '{}': {}", name, path.string(), ec.message());
+                return false;
+            }
+        }
         return true;
     }
 
