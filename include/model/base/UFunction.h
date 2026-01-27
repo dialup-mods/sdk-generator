@@ -71,6 +71,9 @@ public:
                 }
                 return returnParam_.value()->getEmitType();
             } else {
+                if (returnParam_.value()->getCanonicalType() == "SearchStatusOwner") {
+                    return "ESearchStatusOwner";
+                }
                 return returnParam_.value()->getCanonicalType();
             }
         }
@@ -110,11 +113,12 @@ public:
     }
 
     void emitClassMethods(FILE* file) {
-        fmt::print(file, "    {}{} {}({});\n",
+        fmt::print(file, "    {}{} {}({}){};\n",
             isStaticFunction() ? "static " : "",
-            getEmitType() == "SearchStatusOwner" ? "ESearchStatusOwner" : getEmitType(),
+            getEmitType() == "void" ? "void" : "auto",
             getMethodName(),
-            fmt::join(getFormattedArgs(), ", ")
+            fmt::join(getFormattedArgs(), ", "),
+            getEmitType() == "void" ? "" : " -> " + getEmitType()
         );
     }
 
