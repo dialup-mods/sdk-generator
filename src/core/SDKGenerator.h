@@ -99,7 +99,7 @@ public:
         {
             TypeRules::instance().initialize();
             if (generateSDK()) {
-                //printSummary();
+                printSummary();
             }
 
             std::this_thread::sleep_for(std::chrono::milliseconds(900));
