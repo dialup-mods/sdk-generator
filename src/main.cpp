@@ -1,81 +1,68 @@
 #include <Windows.h>
 #include <Psapi.h>
+
+#include "CrashShield.h"
 #include "Terminal.h"
 #include "SDKGenerator.h"
 #include "MessageBox.h"
+#include "ShutdownMonitor.h"
 
-uintptr_t gDllStart = 0;
-uintptr_t gDllEnd   = 0;
+std::atomic<bool> g_shouldExit{false};
+HANDLE g_shutdownThread{nullptr};
+std::string g_shutdownFilename = "shutdown_sdkgen";
 
-void initDllBounds(HMODULE hModule) {
-    MODULEINFO info{};
-    GetModuleInformation(GetCurrentProcess(), hModule, &info, sizeof(info));
-    gDllStart = reinterpret_cast<uintptr_t>(info.lpBaseOfDll);
-    gDllEnd   = gDllStart + info.SizeOfImage;
-}
-static PVOID gVeh = nullptr;
+__declspec(dllexport) void
+destroySDKGen(const LPVOID handle) {
+    printf("Shutting down...\n");
+    shutdown::touchfile::remove();
+    terminal::tryFreeConsole();
 
-static LONG WINAPI crashShield(PEXCEPTION_POINTERS p) {
-    const auto addr = reinterpret_cast<uintptr_t>(p->ExceptionRecord->ExceptionAddress);
+    crash::shield::remove();
 
-    if (addr < gDllStart || addr > gDllEnd)
-        return EXCEPTION_CONTINUE_SEARCH;
-
-    if (p->ExceptionRecord->ExceptionCode != EXCEPTION_ACCESS_VIOLATION)
-        return EXCEPTION_CONTINUE_SEARCH;
-
-    OutputDebugStringA("[TEST DLL] caught access violation, bailing\n");
-
-    // Abort test execution cleanly
-    ExitThread(0);
-}
-
-void installCrashShield() {
-    gVeh = AddVectoredExceptionHandler(1, crashShield);
-}
-
-void removeCrashShield() {
-    if (gVeh) {
-        RemoveVectoredExceptionHandler(gVeh);
-        gVeh = nullptr;
+    HMODULE hModule = reinterpret_cast<HMODULE>(handle);
+    MODULEINFO modInfo{};
+    if (GetModuleInformation(GetCurrentProcess(), hModule, &modInfo, sizeof(modInfo))) {
+        FlushInstructionCache(GetCurrentProcess(), modInfo.lpBaseOfDll, modInfo.SizeOfImage);
     }
+
+    Sleep(200);
+
+    FreeLibraryAndExitThread(hModule, 0);
 }
 
 DWORD WINAPI
-Worker(const LPVOID lpParam) {
+Worker(const LPVOID hModule) {
     Sleep(100);
-    installCrashShield();
+    crash::shield::install();
 
-    terminal::tryHookConsoleIO();
+    g_shutdownThread = CreateThread(nullptr, 0, shutdown::watcher, hModule, 0, nullptr);
 
-    // Verify console is actually hooked
-    HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
-    if (h == INVALID_HANDLE_VALUE || h == nullptr) {
-        MessageBoxA(nullptr, "stdout handle is invalid after hook!", "ERROR", MB_OK);
-    } else {
-        DWORD written;
-        WriteConsoleA(h, "RAW CONSOLE TEST\n", 17, &written, nullptr);
-    }
-
-    // disable buffering
-    freopen("CONOUT$", "w", stdout);
-    setvbuf(stdout, nullptr, _IONBF, 0);
+    terminal::tryHookConsoleIO(false);
     {
         printf("Generator started.\n");
         SDKGenerator generator;
         generator.run();
     }
-    removeCrashShield();
 
-    Sleep(300);
-    FreeLibraryAndExitThread(static_cast<HMODULE>(lpParam), 0);
+    // block forever - let ShutdownWatcher handle shutdown
+    while (!g_shouldExit.load()) {
+        Sleep(100);
+    }
+
+    WaitForSingleObject(g_shutdownThread, 200);  // Block until Worker actually exits
+    CloseHandle(g_shutdownThread);
+    destroySDKGen(hModule);
+    return 0; // never reached
 }
 
 BOOL APIENTRY
 DllMain(const HMODULE hModule, const DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_ATTACH) {
-        initDllBounds(hModule);
+        crash::shield::init(hModule);
         DisableThreadLibraryCalls(hModule);
+
+        shutdown::touchfile::remove();
+
         CreateThread(nullptr, 0, Worker, hModule, 0, nullptr);
     }
     return TRUE;
