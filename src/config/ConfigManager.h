@@ -201,7 +201,7 @@ public:
     }
 
     auto getLogFile() const -> std::filesystem::path {
-        return std::filesystem::path(LOG_DIR) / "log.txt";
+        return std::filesystem::path(getDialUpDir() / "log.txt");
     }
 
     auto getMetaDirAbs() const -> std::filesystem::path {

@@ -19,23 +19,22 @@
 #include <thread>
 #include <unordered_map>
 
-#include "ObjectFilter.h"
-#include "ObjectStore.h"
 #include "BenchmarkTimes.h"
 #include "ConfigManager.h"
 #include "Cowsay.h"
 #include "Logger.h"
+#include "ObjectFilter.h"
+#include "ObjectStore.h"
 #include "Runtime.h"
 #include "RuntimeGen.h"
 #include "TypeRules.h"
 #include "WaveWorker.h"
 
+#include "SchemaLoader.h"
 #include "UClass.h"
 #include "UConst.h"
 #include "UEnum.h"
 #include "UScriptStruct.h"
-#include "MessageBox.h"
-#include "SchemaLoader.h"
 
 using GroupedBase = std::unordered_map<std::string, std::vector<ObjectEntry*>>;
 namespace fs = std::filesystem;
@@ -198,6 +197,7 @@ public:
 
             if (isHeaderFile(suffix)) {
                 fmt::print(file, "#pragma once\n");
+                fmt::print(file, "#include <string_view>\n");
                 fmt::print(file, "#include \"{}\"\n", ConfigManager::instance().getCombinedIncludeFilename().string());
                 if (package == "Core") {
                     fmt::print(file, "#include \"Schema.h\"\n");
@@ -226,28 +226,12 @@ public:
                 fmt::print(file, "#pragma pack(push, {})\n\n", static_cast<int>(ConfigManager::instance().getFinalAlignment()));
             }
 
-            //std::unordered_set<UFunctionEntry*> emittedEntries;
             for (auto* baseEntry : entries) {
                 auto* entry = dynamic_cast<T*>(baseEntry);
                 if (entry) {
                     if (entry->isBlacklisted()) {
                         continue;
                     }
-
-                    //if (filename.find("parameters") != std::string::npos && std::is_same_v<T, UFunctionEntry>) {
-                    //    if (emittedEntries.contains(entry)) {
-                    //        Logger::instance().log("skipping duplicate entry {}", entry->getParamKey());
-                    //        continue;
-                    //    }
-
-                    //    emittedEntries.insert(entry);
-                    //    //Logger::instance().log("param key: {}", entry->getParamKey());
-                    //    //if (emittedParams.contains(entry->getParamKey())) {
-                    //    //    Logger::instance().log("skipping duplicate params");
-                    //    //    continue;
-                    //    //}
-                    //    emittedParams.insert(entry->getParamKey());
-                    //}
 
                     emitEntryFn(file, entry, package);
                 }
@@ -363,12 +347,6 @@ public:
                 if (ConfigManager::instance().insertDeprecatedStaticClassFunction()) {
                     c->emitStaticClasses(file);
                 };
-
-                //c->emitFindFunctionDef(file);
-
-                //if (c->getFullName().find("Core.Object") != std::string::npos ) {
-                //    SchemaLoader::instance().describe();
-                //}
                 if (schemaClass) {
                     fputs("\n", file);
                     schemaClass->emitInjectedMethodsText(file);

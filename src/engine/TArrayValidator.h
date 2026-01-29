@@ -1,8 +1,8 @@
 #pragma once
-template<typename T> class TArray;
+template<typename InElementType, typename Allocator> class TArray;
 
 template <typename T>
-auto isProbablyValidTArray(const TArray<T*>& arr) -> bool {
+auto isProbablyValidTArray(TArray<T*>& arr) -> bool {
     if (!arr.data()) { return false; }
     if (arr.size() < 0 || arr.capacity() < arr.size()) { return false; }
 

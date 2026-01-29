@@ -12,12 +12,12 @@ struct ByteResolver {
             out.kind = ResolvedValue::Kind::Enum;
             out.uEnum = enumMaybe;
             if (raw < enumMaybe->Names.size()) {
-                const FName& name = enumMaybe->Names[raw];
-                if (!name.FNameEntryId) {
-                    out.invalid = true;
-                    return;
-                }
-                out.primitiveStr = "FNameEntryId: " + std::to_string(name.FNameEntryId) + "InstanceNumber: " + std::to_string(name.InstanceNumber);
+                //const FName& name = enumMaybe->Names[raw];
+                //if (!name.FNameEntryId) {
+                //    out.invalid = true;
+                //    return;
+                //}
+                //out.primitiveStr = "FNameEntryId: " + std::to_string(name.FNameEntryId) + "InstanceNumber: " + std::to_string(name.InstanceNumber);
                 // fixme engine gate
                 //{
                 //    const auto nameEntry = Runtime::getFNameEntry(name.FNameEntryId);

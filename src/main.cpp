@@ -5,17 +5,35 @@
 #include "Terminal.h"
 #include "SDKGenerator.h"
 #include "MessageBox.h"
-#include "ShutdownMonitor.h"
+#include "TouchFile.h"
 
-std::atomic<bool> g_shouldExit{false};
+std::atomic g_shouldExit{false};
 HANDLE g_shutdownThread{nullptr};
-std::string g_shutdownFilename = "shutdown_sdkgen";
+auto touchfile = TouchFile("shutdown");
+
+auto deleteShutdownTouchFile() -> bool {
+    if (touchfile.removeFile()) {
+        return true;
+    }
+    return false;
+}
+
+auto WINAPI ShutdownWatcher(void*) -> DWORD {
+    while (!g_shouldExit.load() && touchfile.path()) {
+        Sleep(1000);
+        if (deleteShutdownTouchFile()) {
+            g_shouldExit.store(true);
+            break;
+        }
+    }
+    return 0;
+}
+
 
 __declspec(dllexport) void
 destroySDKGen(const LPVOID handle) {
     printf("Shutting down...\n");
-    shutdown::touchfile::remove();
-    terminal::tryFreeConsole();
+    //terminal::tryFreeConsole();
 
     crash::shield::remove();
 
@@ -35,14 +53,14 @@ Worker(const LPVOID hModule) {
     Sleep(100);
     crash::shield::install();
 
-    g_shutdownThread = CreateThread(nullptr, 0, shutdown::watcher, hModule, 0, nullptr);
-
     terminal::tryHookConsoleIO(false);
     {
         printf("Generator started.\n");
         SDKGenerator generator;
         generator.run();
     }
+
+    g_shutdownThread = CreateThread(nullptr, 0, ShutdownWatcher, hModule, 0, nullptr);
 
     // block forever - let ShutdownWatcher handle shutdown
     while (!g_shouldExit.load()) {
@@ -61,7 +79,7 @@ DllMain(const HMODULE hModule, const DWORD reason, LPVOID) {
         crash::shield::init(hModule);
         DisableThreadLibraryCalls(hModule);
 
-        shutdown::touchfile::remove();
+        deleteShutdownTouchFile();
 
         CreateThread(nullptr, 0, Worker, hModule, 0, nullptr);
     }

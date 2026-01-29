@@ -192,7 +192,7 @@ public:
             } else {
                 nameMap[argName] = 1;
             }
-            formattedArgs.push_back(fmt::format("{}& {}", out->getFormattedArgType(), argName));
+            formattedArgs.push_back(fmt::format("{} {}", out->getFormattedArgType(), argName));
         }
 
         return formattedArgs;

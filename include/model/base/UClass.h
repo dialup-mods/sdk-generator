@@ -183,7 +183,7 @@ public:
     }
 
     void emitClassName(FILE* file) const {
-        fmt::print(file, "    static constexpr auto className = \"{}\";\n", getFullName());
+        fmt::print(file, "    static constexpr std::string_view className = \"{}\";\n", getFullName());
     }
 
     void emitProperties(FILE* file) const {
