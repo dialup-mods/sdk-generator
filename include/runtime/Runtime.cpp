@@ -78,6 +78,7 @@ SDK_API auto r::getName(UObject* obj) -> std::string{
 
 // StaticClass should return the UClass* whose CDO is a UNotificationManager_TA instance.
 
+// dumb and bad
 SDK_API auto r::uclass::find(std::string_view classFullName) -> UClass* {
     if (classCache_.empty()) {
         for (UObject* uObject : uobject::game_pool::ref()) {
