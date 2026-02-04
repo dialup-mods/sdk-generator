@@ -1,27 +1,24 @@
 #pragma once
 //
 // Interface to the game's runtime data
-// kind of has become a dumping ground for things closely related to the engine
-//
-// but this is object cache, function name cache, class name cache.. and related methods
-//
-// FNameEntry to string gets a pass because those are baked in
 //
 // DO NOT make methods like fname::toString..
 //
 // instead, r::fname::wrap()->str()
 //
-// wrap() wraps the fname into an FNameEntry (soon to be renamed FNameView.. maybe)
+// wrap() wraps the fname into an FNameEntry (soon to be renamed FNameView... maybe)
 //
 
 class ObjectEntry;
-
+#include <functional>
 #include <map>
 #include <optional>
 #include <string>
+#include <typeindex>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include "Flags.h"
 #include "SDK.h"
 #include "Schema.h"
 
@@ -45,7 +42,19 @@ struct TransparentEq {
     }
 };
 
-#include "Flags.h"
+struct TransparentStringHash {
+    size_t operator()(const wchar_t*) const = delete;
+
+    using is_transparent = void;
+
+    size_t operator()(const std::string_view sv) const noexcept {
+        return std::hash<std::string_view>{}(sv);
+    }
+
+    size_t operator()(const std::string& s) const noexcept {
+        return std::hash<std::string_view>{}(s);
+    }
+};
 
 using ClassCache = std::unordered_map<
         std::string,
@@ -53,6 +62,8 @@ using ClassCache = std::unordered_map<
         TransparentHash,
         TransparentEq
 >;
+
+using ClassNameToClassCache = std::unordered_map<std::string, UClass*, TransparentStringHash, std::equal_to<>>;
 
 class SDK_API Runtime {
     static Runtime* instance_;
@@ -64,6 +75,10 @@ class SDK_API Runtime {
 
     static std::map<std::string, UFunction*> functionCache_;
     static std::vector<UObject*> uObjectsCache_;
+
+    static std::unordered_map<std::type_index, void*> instanceCache_;
+    static std::unordered_map<UClass*, UObject*> classToCDO_;
+    static ClassNameToClassCache classNameToClass_;
 
 public:
     Runtime() = default;
@@ -86,39 +101,32 @@ public:
         struct SDK_API cache {
             static auto ref() -> std::vector<UObject*>& { return uObjectsCache_; }
             static auto rawObjects() -> const std::vector<UObject*>& { return uObjectsCache_; }
+            static void buildClassNameCacheFromCDOs();
+            static void populateClassToCDO();
+            static auto findClassViaCDO(const std::function<bool(const UObject*)> &cdoPredicate) -> UClass*;
+            static auto getClassNameToClassCache() -> ClassNameToClassCache;
         };
 
-        template <typename T>
-        static auto classOf(UObject*) -> UClass* {
-            static UClass* cached = [] {
-                UClass* cls = uclass::find(T::className);
-                if (!cls) {
-                    printf("can't find\n");
-                }
-                return cls;
-            }();
-            return cached;
-        };
-
-        #ifdef false
+        // UE's `StaticClass`
         template<typename T>
-        static auto getInstanceOf() -> T* {
-            static_assert(std::is_base_of_v<UObject, T>);
+        auto classOf() -> UClass* {
+            static UClass* cls = resolveClass(T::className);
+            return cls;
+        }
+        static auto resolveClass(std::string_view className) -> UClass*;
+        static auto getFirst(std::string_view className) -> UObject*;
+        static auto getAll(std::string_view className) -> std::vector<UObject*>;
 
-            UClass* wanted = classOf<T>();
-            if (!wanted) return nullptr;
-
-            for (UObject* obj : game_pool::ref()) {
-                if (!obj) continue;
-                if (obj->ObjectFlags & RF_DefaultOrArchetypeFlags) continue;
-
-                if (obj->Class == wanted) {
-                    return static_cast<T*>(obj);
-                }
-            }
-            return nullptr;
+        // fix me, use flags
+        template<typename T>
+        bool isValidLiveInstance(T* obj) {
+            if (!obj) { return false; }
+            auto name = obj->GetFullName();
+            return name.find("Default__") == std::string::npos && name.find("Archetype") == std::string::npos &&
+                name.find("PostGameLobby") == std::string::npos && name.find("Test") == std::string::npos;
         }
 
+        #ifdef false
         static auto isSubclassOf(const UObject* obj, const UClass* base) -> bool {
             // SuperField is UClass* here by invariant
             for (UClass* cls = obj->Class; cls; cls = static_cast<UClass*>(cls->SuperField)) {
@@ -129,7 +137,6 @@ public:
         #endif
 
         static auto wrap(UObject*) -> ObjectEntry;
-        static auto isa() -> bool;
     };
 
     struct SDK_API fname {
@@ -151,7 +158,6 @@ public:
         };
 
         struct SDK_API cache {
-
         };
 
         static auto wrap(UObject*) -> ObjectEntry;
@@ -185,10 +191,6 @@ public:
         static void call(UObject* self, UFunction* function, void* params, void* unusedResult = nullptr);
     };
 
-    struct SDK_API packages {
-        static auto findAll() -> std::vector<UObject*>;
-    };
-
     struct SDK_API types {
         static auto isa(const UClass* given, const UClass* other) -> bool;
         static auto knowsClass(const UObject* obj) -> bool;
@@ -211,8 +213,12 @@ public:
         static auto getName(const UObject* obj) -> std::string;
         static auto getNameCPP(UObject* obj) -> std::string;
         static auto getFullName(const UObject* obj) -> std::string;
-        static auto getPackage(const UObject* obj) -> UObject*;
         static auto hasAnyFlags(const UObject* obj, EObjectFlags flags) -> bool;
         static auto hasAllFlags(const UObject* obj, EObjectFlags flags) -> bool;
+        static auto getPackage(const UObject* obj) -> UObject*;
+    };
+
+    struct SDK_API packages {
+        static auto findAll() -> std::vector<UObject*>;
     };
 };

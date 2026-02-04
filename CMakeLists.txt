@@ -64,6 +64,7 @@ set(CLANG_LIBRARY "$ENV{ProgramFiles}/LLVM/lib/libclang.lib")
 set(SOURCES
     ${GAME_CONFIG_DIR}/Schema.cpp
     ${ENGINE_RUNTIME_DIR}/Runtime.cpp
+    ${ENGINE_RUNTIME_DIR}/RuntimeObject.cpp
     ${CMAKE_SOURCE_DIR}/src/main.cpp
     ${CMAKE_SOURCE_DIR}/src/engine/RuntimeGen.cpp
     ${CMAKE_SOURCE_DIR}/include/model/store/ObjectStore.cpp

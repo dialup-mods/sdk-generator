@@ -489,11 +489,12 @@ public:
 
     auto copyFiles() const -> bool {
         std::unordered_map<fs::path, fs::path> filesToMove;
-        filesToMove[ConfigManager::instance().getGameConfigDir() / "Flags.h"]     = ConfigManager::instance().getHeaderDirAbs();
-        filesToMove[ConfigManager::instance().getGameConfigDir() / "Schema.h"]    = ConfigManager::instance().getHeaderDirAbs();
-        filesToMove[ConfigManager::instance().getGameConfigDir() / "Schema.cpp"]  = ConfigManager::instance().getImplementationDirAbs();
+        filesToMove[ConfigManager::instance().getGameConfigDir() / "Flags.h"]       = ConfigManager::instance().getHeaderDirAbs();
+        filesToMove[ConfigManager::instance().getGameConfigDir() / "Schema.h"]      = ConfigManager::instance().getHeaderDirAbs();
+        filesToMove[ConfigManager::instance().getGameConfigDir() / "Schema.cpp"]    = ConfigManager::instance().getImplementationDirAbs();
         filesToMove[ConfigManager::instance().getConfigEngineDir() / "Runtime.h"]   = ConfigManager::instance().getHeaderDirAbs();
         filesToMove[ConfigManager::instance().getConfigEngineDir() / "Runtime.cpp"] = ConfigManager::instance().getImplementationDirAbs();
+        filesToMove[ConfigManager::instance().getConfigEngineDir() / "RuntimeObject.cpp"] = ConfigManager::instance().getImplementationDirAbs();
 
         for (const auto& [fromFileAbs, toDir] : filesToMove) {
             std::error_code ec;

@@ -18,6 +18,10 @@ Runtime* r::instance_{nullptr};
 std::map<std::string, UFunction*> r::functionCache_{};
 std::vector<UObject*> r::uObjectsCache_{};
 
+std::unordered_map<std::type_index, void*> r::instanceCache_{};
+std::unordered_map<UClass*, UObject*> r::classToCDO_{};
+ClassNameToClassCache r::classNameToClass_{};
+
 std::unordered_map<int32_t, FName>        r::fname::cache_{};
 std::unordered_map<std::wstring, int32_t> r::fname::name_to_id_{};
 
@@ -78,12 +82,13 @@ SDK_API auto r::getName(UObject* obj) -> std::string{
 
 // StaticClass should return the UClass* whose CDO is a UNotificationManager_TA instance.
 
-// dumb and bad
+// fixme dumb and bad
 SDK_API auto r::uclass::find(std::string_view classFullName) -> UClass* {
     if (classCache_.empty()) {
         for (UObject* uObject : uobject::game_pool::ref()) {
             if (uObject) {
                 auto fullName = uObject->GetFullName();
+                // seriously wtf
                 if (fullName.starts_with("Class")) {
                     classCache_.emplace(std::move(fullName),
                         static_cast<UClass*>(uObject));
@@ -96,10 +101,12 @@ SDK_API auto r::uclass::find(std::string_view classFullName) -> UClass* {
     return it != classCache_.end() ? it->second : nullptr;
 }
 
+// fixme also dumb and bad
 SDK_API auto r::ufunction::find(const std::string& functionFullName) -> UFunction* {
     if (functionCache_.empty()) {
         for (int32_t i = 0; i < uObjects_->size() - 1; i++) {
             if (UObject* uObject = uObjects_->at(i)) {
+                // also wtf
                 if (std::string objectFullName = uObject->GetFullName(); objectFullName.starts_with("Function")) {
                     functionCache_[objectFullName] = reinterpret_cast<UFunction*>(uObject);
                 }
@@ -118,18 +125,6 @@ SDK_API void r::process_event::call(UObject* self, UFunction* function, void* pa
     auto vtable = static_cast<void**>(uclass::find("Class Core.Object")->VfTableObject.Ptr);
     auto processEvent = reinterpret_cast<tProcessEvent>(vtable[67]);
     processEvent(self, function, params, unusedResult);
-}
-
-SDK_API auto r::packages::findAll() -> std::vector<UObject*> {
-    static std::vector<UObject*> packages;
-    if (packages.empty()) {
-        for (int i = 0; i < 10; ++i) {
-            if (UObject* obj = uobject::game_pool::ref().at(i); obj && !r::fname::game_pool::find(obj->Name)) {
-                packages.emplace_back(obj);
-            }
-        }
-    }
-    return packages;
 }
 
 // FName
@@ -196,6 +191,7 @@ SDK_API auto r::fname::game_pool::find(const int32_t id) -> std::optional<std::r
     return std::cref(it->second);
 }
 
+// the engine's pre-existing `unknown` FName
 SDK_API auto r::fname::unknown() -> const FName& {
     static FName unknown = []() {
         // shouldn't happen, but
@@ -205,6 +201,7 @@ SDK_API auto r::fname::unknown() -> const FName& {
     return unknown;
 }
 
+// the engine's pre-existing `none` FName
 SDK_API auto r::fname::none() -> const FName& {
     static FName none = []() {
         return FName{ 0, 0 };
@@ -235,17 +232,17 @@ SDK_API auto r::fname::game_pool::getWString(const FName& wanted) -> std::option
 }
 
 SDK_API auto r::fname::game_pool::getString(const FName& wanted) -> std::optional<std::string> {
-    if (auto fnameMaybe = find(wanted)) {
+    if (const auto fnameMaybe = find(wanted)) {
         return getString(fnameMaybe.value().get().FNameEntryId);
     }
     return std::nullopt;
 }
 
 SDK_API auto r::uobject::game_pool::isPopulated() -> bool {
-    if (ptr()->empty()) {
-        return false;
+    if (!ptr()->empty()) {
+        return true;
     }
-    return true;
+    return false;
 }
 
 //SDK_API auto r::uobject::wrap(UObject* gameObj) -> ObjectEntry {
@@ -328,6 +325,14 @@ SDK_API auto r::uobject_utils::getFullName(const UObject* obj) -> std::string {
     return obj->Class->Name.ToString() + " " + fullName;
 }
 
+SDK_API auto r::uobject_utils::hasAnyFlags(const UObject* obj, const EObjectFlags flags) -> bool {
+    return (obj->ObjectFlags & flags) != 0;
+}
+
+SDK_API auto r::uobject_utils::hasAllFlags(const UObject* obj, const EObjectFlags flags) -> bool {
+    return (obj->ObjectFlags & flags) == flags;
+}
+
 SDK_API auto r::uobject_utils::getPackage(const UObject* obj) -> UObject* {
     UObject* pkg = nullptr;
     for (auto outer = obj->Outer; outer; outer = outer->Outer) {
@@ -336,10 +341,14 @@ SDK_API auto r::uobject_utils::getPackage(const UObject* obj) -> UObject* {
     return pkg;
 }
 
-SDK_API auto r::uobject_utils::hasAnyFlags(const UObject* obj, const EObjectFlags flags) -> bool {
-    return (obj->ObjectFlags & flags) != 0;
-}
-
-SDK_API auto r::uobject_utils::hasAllFlags(const UObject* obj, const EObjectFlags flags) -> bool {
-    return (obj->ObjectFlags & flags) == flags;
+SDK_API auto r::packages::findAll() -> std::vector<UObject*> {
+    static std::vector<UObject*> packages;
+    if (packages.empty()) {
+        for (int i = 0; i < 10; ++i) {
+            if (UObject* obj = uobject::game_pool::ref().at(i); obj && !r::fname::game_pool::find(obj->Name)) {
+                packages.emplace_back(obj);
+            }
+        }
+    }
+    return packages;
 }
