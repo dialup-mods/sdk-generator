@@ -33,7 +33,6 @@ auto WINAPI ShutdownWatcher(void*) -> DWORD {
 __declspec(dllexport) void
 destroySDKGen(const LPVOID handle) {
     printf("Shutting down...\n");
-    //terminal::tryFreeConsole();
 
     crash::shield::remove();
 
@@ -44,6 +43,7 @@ destroySDKGen(const LPVOID handle) {
     }
 
     Sleep(200);
+    terminal::tryFreeConsole();
 
     FreeLibraryAndExitThread(hModule, 0);
 }
