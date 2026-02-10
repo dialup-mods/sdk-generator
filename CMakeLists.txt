@@ -24,7 +24,6 @@ file(TO_CMAKE_PATH "${DIALUP_INSTALL_DIR}" DIALUP_DIR)
 
 # output dirs
 set(GENERATED_DIRS
-    "${CMAKE_SOURCE_DIR}/config/rocketleague"
     "${CMAKE_SOURCE_DIR}/plugin/generated"
     "${CMAKE_SOURCE_DIR}/plugin/generated/impl"
     "${CMAKE_SOURCE_DIR}/plugin/generated/include"
