@@ -14,7 +14,7 @@ set(LOG_DIR "${CMAKE_SOURCE_DIR}/log" CACHE STRING "Directory to create the log 
 file(TO_CMAKE_PATH "${CMAKE_SOURCE_DIR}/config" CONFIG_DIR)
 
 # fixme: make work with Makefile
-file(TO_CMAKE_PATH "${CMAKE_SOURCE_DIR}/plugin/generated" SDK_OUTPUT_DIR)
+file(TO_CMAKE_PATH "${CMAKE_SOURCE_DIR}/../sdk-plugin/generated" SDK_OUTPUT_DIR)
 
 file(TO_CMAKE_PATH "${CONFIG_DIR}/${GAME}" GAME_CONFIG_DIR)
 file(TO_CMAKE_PATH "${CMAKE_SOURCE_DIR}/include/runtime" ENGINE_RUNTIME_DIR)
