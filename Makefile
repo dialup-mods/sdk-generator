@@ -68,16 +68,3 @@ run: check-shell
 ls-procs: check-shell
 	@DLL_NAME=$$(cat dll_filename).dll; \
 	powershell -Command "tasklist /m DialUp-SDKGen.dll"
-
-configure-plugin: check-shell
-	$(call run_with_vcvars, cmake -S ./plugin -B plugin/build -G $(GENERATOR) -DCMAKE_BUILD_TYPE=RelWithDebInfo)
-
-build-plugin: check-shell
-	$(call run_with_vcvars, cmake --build plugin/build --config RelWithDebInfo)
-
-install-plugin: check-shell
-	$(call run_with_vcvars, cmake --install plugin/build --config RelWithDebInfo)
-
-clean-plugin: check-shell
-	@rm -rf plugin/build
-	@rm -rf plugin/.build-artifacts
