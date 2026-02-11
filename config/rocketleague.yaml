@@ -1,0 +1,80 @@
+game:
+  name: "Rocket League"
+  version: "6.6.6"
+  platform: "Windows"
+
+output:
+  logFile: "C:\\Users\\chaso\\source\\SDK\\generated\\SDKGen.log"
+  headers: "C:\\Users\\chaso\\source\\SDK\\generated\\include"
+  implementations: "C:\\Users\\chaso\\source\\SDK\\generated\\impl" # the `.cpp`s
+  meta: "C:\\Users\\chaso\\source\\SDK\\generated\\meta" # for GNames dump, GObjects dump, and log
+  gObjects: "GObjects.txt"
+  gNames: "GNames.txt"
+  headerExtension: ".h" # WARNING: .hpp is cursed
+  combinedIncludeFile: "C:\\Users\\chaso\\source\\SDK\\generated\\include\\SDK.h"
+  combinedIncludeForwardDeclarations: |
+    class UStruct;
+    class FNameEntry;
+    class UClass;
+    class UEnum;
+    class UFunction;
+    class UObject;
+    template<typename InElementType, typename Allocator> class TArray;
+
+patterns:
+  processEvent:
+    method: vtable # or `pattern`
+    index: 67 # set to false/-1 to use pattern
+    pattern: ""
+    mask: "xxx???x"
+    # useFNameEntriesForOffsets: true
+
+  uObjects:
+    method: offsetFromFNameEntries # or `pattern` or `offset`
+    offset: 0x48
+    mask: "xxx???x"
+    pattern: "10 11 12 00 00 00 13"
+
+  fNameEntries:
+    method: pattern # or `offset`
+    offset: 0x0
+    mask: "??????xx??xxxxxx"
+    pattern: "00 00 00 00 00 00 00 00 00 00 01 00 35 25 02 00"
+
+generation:
+  gObjectLimit: 0 # limit the number of GObjects which are iterated for faster development/testing
+  useConstants: false
+  prefixEnumsWithClass: true # emit `enum class Fun` vs `enum Fun`
+  alignment:
+    game: 0x8 # alignment used during property size/offset calculations (reflection-level)
+    final: 0x8 # alignment used for emitted SDK structs (code-level)
+  format:
+    insertDeprecatedStaticClassFunction: false
+
+#  # TODO: unimplemented
+#  recursionLimit: 0
+#  characterType: UTF16
+#  FStringCharacterType: UTF16
+#  removeNativeIndex: false
+#  removeNativeFlags: false
+
+rules:
+#  - str: "SearchStatusOwner"
+#    replace: "ESearchStatusOwner"
+#    method: exact
+#    action: replace
+  - str: "PrimeUpdate"
+    method: contains
+    action: blacklist
+#  - str: "ScriptGroup_ORS"
+#    method: exact
+#    action: blacklist
+  - str: "UGroup_ORS"
+    method: exact
+    action: blacklist
+#  - str: "SearchStatusOwner"
+#    method: contains
+#    action: blacklist
+#  - str: "UORS"
+#    method: contains
+#    action: blacklist
