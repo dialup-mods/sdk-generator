@@ -24,16 +24,16 @@ file(TO_CMAKE_PATH "${DIALUP_INSTALL_DIR}" DIALUP_DIR)
 
 # output dirs
 set(GENERATED_DIRS
-    "${CMAKE_SOURCE_DIR}/plugin/generated"
-    "${CMAKE_SOURCE_DIR}/plugin/generated/impl"
-    "${CMAKE_SOURCE_DIR}/plugin/generated/include"
-    "${CMAKE_SOURCE_DIR}/plugin/imported"
-    "${CMAKE_SOURCE_DIR}/plugin/imported/model"
-    "${CMAKE_SOURCE_DIR}/plugin/imported/model/abstract"
-    "${CMAKE_SOURCE_DIR}/plugin/imported/model/base"
-    "${CMAKE_SOURCE_DIR}/plugin/imported/model/helpers"
-    "${CMAKE_SOURCE_DIR}/plugin/imported/model/properties"
-    "${CMAKE_SOURCE_DIR}/plugin/imported/runtime"
+    "${CMAKE_SOURCE_DIR}/../sdk-plugin/generated"
+    "${CMAKE_SOURCE_DIR}/../sdk-plugin/generated/impl"
+    "${CMAKE_SOURCE_DIR}/../sdk-plugin/generated/include"
+    "${CMAKE_SOURCE_DIR}/../sdk-plugin/imported"
+    "${CMAKE_SOURCE_DIR}/../sdk-plugin/imported/model"
+    "${CMAKE_SOURCE_DIR}/../sdk-plugin/imported/model/abstract"
+    "${CMAKE_SOURCE_DIR}/../sdk-plugin/imported/model/base"
+    "${CMAKE_SOURCE_DIR}/../sdk-plugin/imported/model/helpers"
+    "${CMAKE_SOURCE_DIR}/../sdk-plugin/imported/model/properties"
+    "${CMAKE_SOURCE_DIR}/../sdk-plugin/imported/runtime"
 )
 foreach(dir IN LISTS GENERATED_DIRS)
     file(MAKE_DIRECTORY "${dir}")
