@@ -1,7 +1,7 @@
+# must be set this way for it to work on bash and win shells
 LOCALAPPDATA := $(shell powershell -NoProfile -Command "[Environment]::GetFolderPath('LocalApplicationData')")
 DIALUP_ROOT       := $(LOCALAPPDATA)/DialUp
 include $(DIALUP_ROOT)/build-tools/common.mk
-include $(DIALUP_ROOT)/build-tools/shell.mk
 include $(DIALUP_ROOT)/build-tools/rocketleague.mk
 
 BUILD_DIR        := build
@@ -15,21 +15,41 @@ BANNER_DIRS := \
 	plugin/imported/model \
 	plugin/imported/runtime
 
-.PHONY: configure build clean run configure-plugin build-plugin install-plugin
+.PHONY: configure build clean all ls-procs run all
+
+.DEFAULT_GOAL := all
+
+all: check-shell clean configure build run
 
 ls-procs:
 	@DLL_NAME=$$(cat dll_filename).dll; \
 	tasklist //m $$DLL_NAME
+	powershell -Command "tasklist /m DialUp-SDKGen.dll"
 
 configure: check-shell
-	@echo "🛠️ Configuring CMake..."
+	@set -e; \
+	game="$(game)"; \
+	if [ -z "$$game" ]; then \
+		read -p "Select game configuration (default): " input; \
+		if [ -z "$$input" ]; then \
+			game="default"; \
+		else \
+			game="$$input"; \
+		fi; \
+	fi; \
+	echo "Using game configuration: $$game"; \
+	if [ ! -f "./config/$$game.yaml" ]; then \
+		echo "Missing ./config/$$game.yaml"; \
+		exit 1; \
+	fi; \
+	echo "🛠️ Configuring CMake..."; \
 	$(call run_with_vcvars, \
-		cmake -S . -B build -G $(GENERATOR)  \
-		-DCMAKE_BUILD_TYPE=RelWithDebInfo    \
-		-DCMAKE_EXPORT_COMPILE_COMMANDS=ON   \
-		"-DGAME=$(game)"                     \
-		"-DLOG_DIR=$(log_dir)"               \
-		"-DGAME_BINARY_PATH=$(binary_dir)"   \
+		cmake -S . -B build -G $(GENERATOR) \
+		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
+		-DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+		"-DGAME=$$game" \
+		"-DLOG_DIR=$(log_dir)" \
+		"-DGAME_BINARY_PATH=$(binary_dir)" \
 		$(ARGS))
 
 build: check-shell
@@ -65,6 +85,3 @@ run: check-shell
 		echo ""; \
 		'
 
-ls-procs: check-shell
-	@DLL_NAME=$$(cat dll_filename).dll; \
-	powershell -Command "tasklist /m DialUp-SDKGen.dll"
