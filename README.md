@@ -33,13 +33,12 @@
 - Achieved via correct typing and intentional casts
 - --checks-\*, cppcoreguidelines-\*, modernize-\*, bugprone-\*, readability-\*
 - Real modern best practices
-- **Professional AF** ✅
 
 *Generated with Rocket League compared to the leading community generator
 
 ## Compile once, use everywhere
 
-With the [DialUp-SDK plugin](https://github.com/dialup-mods/sdk-plugin), you can ship the SDK as a DLL. It's yours, *absolutely FREE!*
+With the Dial-Up [SDK plugin](https://git.dialup.now/dialup/sdk-plugin), you can ship the SDK as a DLL. It's yours, *absolutely FREE!*
 
 - Dynamically load into plugins
 - Supports multiple instances
@@ -84,63 +83,53 @@ Most code can be updated with simple find/replace.
 
 ## Quick Start
 
-### 1. Prerequisites
+See the [Dial-Up superrepo](https://git.dialup.now/dialup/dialup) for build instructions.
 
-#### Install Dependencies
+## Configuration
 
-Run the following in Powershell as administrator to install: Git, CMake, Ninja, Clang, MSYS2
+### Create a Game Profile
 
-```powershell
-iwr -useb https://raw.githubusercontent.com/dialup-mods/dialup/main/tools/install_build_deps.ps1 | iex
-```
-
-#### Clone and Install Build Tools
-```bash
-git clone --recursive git@github.com:dialup-mods/dialup.git
-cd dialup
-make install-tools
-```
-
-#### Install the injector:
 ```sh
-cd injector
-make configure
-make build
-make install
-```
-
-NOTE: Using other generators is possible, but unsupported. The generated output should go to `../sdk-plugin/generated` for building the SDK plugin; this code path is untested outside of running the official injector within the current build system.
-
-### 2. Create a Game Profile
-```sh
-cd ../sdk-generator
 cp config/default.yaml config/mygame.yaml
 cp -r config/default config/mygame
 ```
 
-### 3. Configure Your Game
+### Configure Your Game
 
 1. **Edit `/config/mygame.yaml`** - Update patterns, offsets, and blacklist for your game. Edits made here do not require a recompile before re-running
 2. **Edit `/config/mygame/Schema.h` and `/config/mygame/Schema.cpp`** - Define core game types
 
 See the [Schema documentation](src/schema/README.md) for details on customizing SDK generation
 
-### 4. Generate Your SDK
+## Generate Your SDK
+
+With the game open, run:
+
+```sh
+make all
+# enter "mygame" when prompted
+```
+
+<details>
+    <summary>Manual build steps</summary>
+
 ```sh
 make configure game=mygame
 make build
-make inject
+make run
 ```
 
-The generated SDK will be output to `../sdk-plugin/generated/`.
+</details>
+
+NOTE: The generated SDK will be output to `../sdk-plugin/generated/`.
 
 ### Next Steps
 
-Once generated, [build the DialUp SDK plugin](../sdk-plugin) to compile your SDK into a reusable library that can be safely shared across multiple plugins - no duplicate caches, no ODR violations, no random crashes.
+Once generated, build the Dial-Up [SDK plugin](https://git.dialup.now/dialup/sdk-plugin) to compile your SDK into a portable library that can be safely shared across multiple plugins - no duplicate caches, no ODR violations, no random crashes.
 
 ## Troubleshooting
 
-`log.txt` is generated in the current directory.
+`log.txt` is generated in `%LOCALAPPDATA%/dialup/log`
 
 ## Roadmap
 
@@ -149,3 +138,7 @@ Once generated, [build the DialUp SDK plugin](../sdk-plugin) to compile your SDK
 - Make "interesting flags" configurable
 - Address "class" vs "struct" prefix handling
 - Review and update remaining fixmes
+
+## Acknowledgements
+
+
