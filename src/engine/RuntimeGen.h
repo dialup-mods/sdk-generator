@@ -89,6 +89,15 @@ findPattern(const std::string& patternStr, const std::string& mask) -> uintptr_t
 
     return 0;
 }
+
+inline uintptr_t findRipRelativeAddr(uintptr_t startAddr, int offsetToDisplacementInt32) {
+    if (!startAddr)
+        return 0;
+    uintptr_t ripRelativeOffsetAddr = startAddr + offsetToDisplacementInt32;
+    int32_t   displacement          = *reinterpret_cast<int32_t *>(ripRelativeOffsetAddr);
+    return (ripRelativeOffsetAddr + 4) + displacement;
+};
+
 }
 
 struct RuntimeGen {

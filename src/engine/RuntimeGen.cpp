@@ -26,10 +26,21 @@ auto RuntimeGen::populate() -> bool {
                 return false;
             }
 
-            fNameEntriesAddress = memory::findPattern(fNameEntriesPattern, fNameEntriesMask);
+            const auto fNameEntriesInstruction =
+            memory::findPattern(fNameEntriesPattern, fNameEntriesMask);
+
+            logAddress("FNameEntries instruction:", fNameEntriesInstruction);
+
+            if (!memory::isReadable(fNameEntriesInstruction)) {
+                Logger::instance().log("[ERROR] FNameEntries pattern not found. (instruction not readable)");
+                return false;
+            }
+
+            fNameEntriesAddress = memory::findRipRelativeAddr(fNameEntriesInstruction, 7);
+
             logAddress("FNameEntries address:", fNameEntriesAddress);
             if (!memory::isReadable(fNameEntriesAddress)) {
-                Logger::instance().log("[ERROR] FNameEntries pattern not found.");
+                Logger::instance().log("[ERROR] FNameEntries pattern not found. (address not readable)");
                 return false;
             }
 

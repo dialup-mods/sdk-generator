@@ -38,8 +38,8 @@ patterns:
   fNameEntries:
     method: pattern # or `offset`
     offset: 0x0
-    mask: "??????xx??xxxxxx"
-    pattern: "00 00 00 00 00 00 00 00 00 00 01 00 35 25 02 00"
+    mask: "xxxxxxx????xxxxxx"
+    pattern: "49 63 4E 08 48 8B 05 00 00 00 00 4C 89 34 C8 EB 08"
 
 generation:
   gObjectLimit: 0 # limit the number of GObjects which are iterated for faster development/testing
