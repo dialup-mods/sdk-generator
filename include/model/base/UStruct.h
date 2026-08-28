@@ -15,30 +15,12 @@
 class UStructEntry final
   : public StructLikeEntry, LayoutTraits<UStruct, UField> {
 public:
-    explicit UStructEntry(UObject* obj) : StructLikeEntry(obj) {
-        //UStructEntry::iterateDependencies();
-        //UStructEntry::createSuperFieldEntryMaybe();
-        //walkChildren(asStruct(), UStructEntry::getFullName());
-    }
+    explicit UStructEntry(UObject* obj) : StructLikeEntry(obj) {}
 
     auto getType() const -> EClassTypes override { return EClassTypes::UStruct; }
     auto getCacheType() const -> std::string override { return "StructEntry"; }
     auto getCanonicalType() const -> std::string override { return "UStruct"; }
     auto getDefaultClassName() const -> std::string override { return "UStruct"; }
-
-//    auto getDependencyTypes() -> std::vector<std::string> override {
-//        const auto baseStructName = getResolvedBaseStructName();
-//        if (!baseStructName.empty()) {
-//            deps_.insert(baseStructName);
-//        }
-//
-//        for (auto* p : properties_) {
-//            auto fieldDeps = p->getDependencyTypes();  // delegate to field entries
-//            deps_.insert(deps_.end(), fieldDeps.begin(), fieldDeps.end());
-//        }
-//
-//        return deps_;
-//    }
 
     auto getResolvedStructName() const -> std::string {
         return (ObjectStore::instance().countStructsWithName(getNameCPP()) > 1)
